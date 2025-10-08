@@ -1,4 +1,5 @@
 pub mod add;
+pub mod ldi;
 pub mod opcodes;
 
 fn sign_extend(input: u16, bit_count: u16) -> u16 {

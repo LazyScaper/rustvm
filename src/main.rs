@@ -2,6 +2,7 @@ mod instructions;
 mod registers;
 
 use crate::instructions::add::add;
+use crate::instructions::ldi::load_indirect;
 use crate::instructions::opcodes::Opcode;
 use crate::registers::register::Register;
 use crate::registers::ConditionFlag;
@@ -40,7 +41,10 @@ fn main() {
     while running {
         let address_of_instruction = registers[Register::Pc as usize];
         let instruction: u16 = memory[address_of_instruction as usize];
-        let opcode: Opcode = Opcode::get(instruction).unwrap();
+        let opcode: Opcode = match Opcode::get(instruction) {
+            Some(opcode) => opcode,
+            None => panic!("Invalid opcode: {}", instruction),
+        };
 
         match opcode {
             Opcode::Br => {}
@@ -53,7 +57,7 @@ fn main() {
             Opcode::Str => {}
             Opcode::Rti => {}
             Opcode::Not => {}
-            Opcode::Ldi => {}
+            Opcode::Ldi => load_indirect(registers, instruction),
             Opcode::Sti => {}
             Opcode::Jmp => {}
             Opcode::Res => {}
