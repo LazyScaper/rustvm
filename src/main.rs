@@ -12,6 +12,69 @@ use std::process::exit;
 const MEMORY_MAX: usize = 1 << 16;
 const PC_START: usize = 0x3000;
 
+struct vm {
+    memory: [u16; MEMORY_MAX],
+    registers: [u16; (Register::Count as u16) as usize],
+}
+
+impl vm {
+    fn new() -> vm {
+        Self {
+            registers: [0; (Register::Count as u16) as usize],
+            memory: [0; MEMORY_MAX],
+        }
+    }
+
+    fn load_program(&mut self) {
+        // Load the program into memory
+    }
+
+    fn run(&mut self) {
+        let mut running = true;
+
+        while running {
+            let instruction = self.fetch();
+            let opcode = Self::decode(instruction);
+            self.execute(instruction, opcode);
+        }
+    }
+
+    fn execute(&mut self, instruction: u16, opcode: Opcode) {
+        match opcode {
+            Opcode::Br => {}
+            Opcode::Add => add(self.registers, instruction),
+            Opcode::Ld => {}
+            Opcode::St => {}
+            Opcode::Jsr => {}
+            Opcode::And => {}
+            Opcode::Ldr => {}
+            Opcode::Str => {}
+            Opcode::Rti => {}
+            Opcode::Not => {}
+            Opcode::Ldi => load_indirect(self.registers, instruction),
+            Opcode::Sti => {}
+            Opcode::Jmp => {}
+            Opcode::Res => {}
+            Opcode::Lea => {}
+            Opcode::Trap => {}
+        }
+    }
+
+    fn decode(instruction: u16) -> Opcode {
+        let opcode: Opcode = match Opcode::get(instruction) {
+            Some(opcode) => opcode,
+            None => panic!("Invalid opcode {:X}", instruction),
+        };
+        opcode
+    }
+
+    fn fetch(&mut self) -> u16 {
+        let address_of_instruction = self.registers[Register::Pc as usize];
+        let instruction: u16 = self.memory[address_of_instruction as usize];
+        instruction
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -29,42 +92,13 @@ fn main() {
             }
         }
     }
+    let vm = vm::new();
 
     let mut registers = [0u16; (Register::Count as u16) as usize];
-    let mut memory = [0u16; MEMORY_MAX];
+    let memory = [0u16; MEMORY_MAX];
 
     registers[Register::Cond as usize] = ConditionFlag::Zro as u16;
     registers[Register::Pc as usize] = PC_START as u16;
-
-    let mut running = true;
-
-    while running {
-        let address_of_instruction = registers[Register::Pc as usize];
-        let instruction: u16 = memory[address_of_instruction as usize];
-        let opcode: Opcode = match Opcode::get(instruction) {
-            Some(opcode) => opcode,
-            None => panic!("Invalid opcode: {}", instruction),
-        };
-
-        match opcode {
-            Opcode::Br => {}
-            Opcode::Add => add(registers, instruction),
-            Opcode::Ld => {}
-            Opcode::St => {}
-            Opcode::Jsr => {}
-            Opcode::And => {}
-            Opcode::Ldr => {}
-            Opcode::Str => {}
-            Opcode::Rti => {}
-            Opcode::Not => {}
-            Opcode::Ldi => load_indirect(registers, instruction),
-            Opcode::Sti => {}
-            Opcode::Jmp => {}
-            Opcode::Res => {}
-            Opcode::Lea => {}
-            Opcode::Trap => {}
-        }
-    }
 }
 
 fn update_flags(mut registers: [u16; (Register::Count as u16) as usize], r: u16) {
