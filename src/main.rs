@@ -30,16 +30,16 @@ impl vm {
     }
 
     fn run(&mut self) {
-        let mut running = true;
-
-        while running {
-            let instruction = self.fetch();
-            let opcode = Self::decode(instruction);
-            self.execute(instruction, opcode);
-        }
+        while self.fetch_decode_execute() {}
     }
 
-    fn execute(&mut self, instruction: u16, opcode: Opcode) {
+    fn fetch_decode_execute(&mut self) -> bool {
+        let instruction = self.fetch();
+        let opcode = Self::decode(instruction);
+        self.execute(instruction, opcode)
+    }
+
+    fn execute(&mut self, instruction: u16, opcode: Opcode) -> bool {
         match opcode {
             Opcode::Br => {}
             Opcode::Add => add(self.registers, instruction),
@@ -58,6 +58,8 @@ impl vm {
             Opcode::Lea => {}
             Opcode::Trap => {}
         }
+
+        true
     }
 
     fn decode(instruction: u16) -> Opcode {
@@ -92,13 +94,13 @@ fn main() {
             }
         }
     }
-    let vm = vm::new();
 
-    let mut registers = [0u16; (Register::Count as u16) as usize];
-    let memory = [0u16; MEMORY_MAX];
+    let mut vm = vm::new();
 
-    registers[Register::Cond as usize] = ConditionFlag::Zro as u16;
-    registers[Register::Pc as usize] = PC_START as u16;
+    vm.registers[Register::Cond as usize] = ConditionFlag::Zro as u16;
+    vm.registers[Register::Pc as usize] = PC_START as u16;
+
+    vm.run();
 }
 
 fn update_flags(mut registers: [u16; (Register::Count as u16) as usize], r: u16) {
