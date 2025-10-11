@@ -28,7 +28,7 @@ mod tests {
     // ========== Immediate Mode Tests ==========
 
     #[test]
-    fn test_add_immediate_mode_positive() {
+    fn should_add_immediate_mode_positive() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R4, 10);
 
@@ -39,7 +39,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_immediate_mode_zero() {
+    fn should_add_immediate_mode_zero() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 42);
 
@@ -50,7 +50,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_immediate_mode_max_positive() {
+    fn should_add_immediate_mode_max_positive() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 10);
 
@@ -61,7 +61,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_immediate_mode_negative() {
+    fn should_add_immediate_mode_negative() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 10);
 
@@ -72,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_immediate_mode_max_negative() {
+    fn should_add_immediate_mode_max_negative() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 20);
 
@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_immediate_mode_result_zero() {
+    fn should_add_immediate_mode_result_zero() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R5, 5);
 
@@ -94,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_immediate_mode_overflow() {
+    fn should_add_immediate_mode_overflow() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R0, 65530);
 
@@ -105,7 +105,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_immediate_mode_negative_overflow() {
+    fn should_add_immediate_mode_negative_overflow() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R2, 5);
 
@@ -118,7 +118,7 @@ mod tests {
     // ========== Register Mode Tests ==========
 
     #[test]
-    fn test_add_register_mode_positive() {
+    fn should_add_register_mode_positive() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 10);
         vm.write_to_register(Register::R2, 20);
@@ -130,7 +130,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_register_mode_with_zero() {
+    fn should_add_register_mode_with_zero() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 42);
         vm.write_to_register(Register::R4, 0);
@@ -142,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_register_mode_same_register() {
+    fn should_add_register_mode_same_register() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R2, 15);
 
@@ -153,7 +153,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_register_mode_three_different_registers() {
+    fn should_add_register_mode_three_different_registers() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R4, 100);
         vm.write_to_register(Register::R6, 200);
@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_register_mode_overflow() {
+    fn should_add_register_mode_overflow() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R0, 40000);
         vm.write_to_register(Register::R1, 30000);
@@ -177,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_register_mode_result_zero() {
+    fn should_add_register_mode_result_zero() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 0);
         vm.write_to_register(Register::R5, 0);
@@ -189,7 +189,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_register_mode_max_values() {
+    fn should_add_register_mode_max_values() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R6, 65535);
         vm.write_to_register(Register::R7, 65535);
@@ -203,7 +203,7 @@ mod tests {
     // ========== Edge Cases ==========
 
     #[test]
-    fn test_add_to_r0() {
+    fn should_add_to_r0() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 5);
 
@@ -214,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_from_r7() {
+    fn should_add_from_r7() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R7, 99);
 
@@ -225,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_all_zeros() {
+    fn should_add_all_zeros() {
         let mut vm = Vm::new();
 
         // R0 = R0 + 0 (all registers start at 0)
@@ -235,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_destination_same_as_source() {
+    fn should_add_destination_same_as_source() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R4, 10);
 
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_register_mode_source_and_dest_overlap() {
+    fn should_add_register_mode_source_and_dest_overlap() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R2, 10);
         vm.write_to_register(Register::R5, 7);

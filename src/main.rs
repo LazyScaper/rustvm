@@ -29,6 +29,10 @@ impl Vm {
         self.registers[register as usize] = value;
     }
 
+    fn write_to_memory(&mut self, offset: u16, value: u16) {
+        self.memory[offset as usize] = value;
+    }
+
     fn load_program(&mut self) {
         // Load the program into memory
     }
@@ -55,7 +59,7 @@ impl Vm {
             Opcode::Str => {}
             Opcode::Rti => {}
             Opcode::Not => {}
-            Opcode::Ldi => load_indirect(&mut self.registers, instruction),
+            Opcode::Ldi => load_indirect(&mut self.registers, self.memory, instruction),
             Opcode::Sti => {}
             Opcode::Jmp => {}
             Opcode::Res => {}
