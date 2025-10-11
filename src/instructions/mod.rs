@@ -1,3 +1,6 @@
+use crate::registers::register::Register;
+use crate::registers::ConditionFlag;
+
 pub mod add;
 pub mod ldi;
 pub mod opcodes;
@@ -10,6 +13,14 @@ fn sign_extend(input: u16, bit_count: u16) -> u16 {
     }
 
     input
+}
+
+fn update_flags(registers: &mut [u16; (Register::Count as u16) as usize], r: u16) {
+    match registers[r as usize] {
+        0 => registers[Register::Cond as usize] = ConditionFlag::Zro as u16,
+        1 => registers[Register::Cond as usize] = ConditionFlag::Neg as u16,
+        _ => registers[Register::Cond as usize] = ConditionFlag::Pos as u16,
+    }
 }
 
 #[cfg(test)]

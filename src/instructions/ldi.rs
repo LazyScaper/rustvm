@@ -1,8 +1,7 @@
-use crate::instructions::sign_extend;
+use crate::instructions::{sign_extend, update_flags};
 use crate::registers::register::Register::{Count, Pc};
-use crate::update_flags;
 
-pub fn load_indirect(mut registers: [u16; (Count as u16) as usize], instruction: u16) {
+pub fn load_indirect(registers: &mut [u16; (Count as u16) as usize], instruction: u16) {
     let destination_register = (instruction >> 9) & 0x7;
     let pc_offset_9 = sign_extend(instruction & 0x1FF, 9);
 
