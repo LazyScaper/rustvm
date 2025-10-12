@@ -2,6 +2,8 @@ mod instructions;
 mod registers;
 
 use crate::instructions::add::add;
+use crate::instructions::and::and;
+use crate::instructions::branch::br;
 use crate::instructions::ldi::load_indirect;
 use crate::instructions::opcodes::Opcode;
 use crate::registers::register::Register;
@@ -49,12 +51,12 @@ impl Vm {
 
     fn execute(&mut self, instruction: u16, opcode: Opcode) -> bool {
         match opcode {
-            Opcode::Br => {}
+            Opcode::Br => br(&mut self.registers, instruction),
             Opcode::Add => add(&mut self.registers, instruction),
             Opcode::Ld => {}
             Opcode::St => {}
             Opcode::Jsr => {}
-            Opcode::And => {}
+            Opcode::And => and(&mut self.registers, instruction),
             Opcode::Ldr => {}
             Opcode::Str => {}
             Opcode::Rti => {}
