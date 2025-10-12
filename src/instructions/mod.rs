@@ -2,7 +2,8 @@ use crate::registers::register::Register;
 use crate::registers::ConditionFlag;
 
 pub mod add;
-mod and;
+pub mod and;
+pub mod branch;
 pub mod ldi;
 pub mod opcodes;
 
