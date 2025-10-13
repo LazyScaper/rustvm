@@ -8,7 +8,7 @@ pub mod ldi;
 pub mod opcodes;
 
 fn sign_extend(input: u16, bit_count: u16) -> u16 {
-    let sign_bit = input >> bit_count - 1;
+    let sign_bit = input >> (bit_count - 1);
 
     if sign_bit & 1 == 1 {
         return input | (0xFFFF << bit_count);

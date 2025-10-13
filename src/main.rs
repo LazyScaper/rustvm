@@ -92,12 +92,12 @@ fn main() {
 
     match args.len() {
         1 => {
-            print!("Usage: {} [image-file1]...\n", args[0]);
+            println!("Usage: {} [image-file1]...", args[0]);
             exit(2)
         }
         _ => {
             for image_file in args {
-                if (!read_image(&image_file)) {
+                if !read_image(&image_file) {
                     println!("{} is not a valid image.", &image_file);
                     exit(1);
                 }
@@ -113,6 +113,6 @@ fn main() {
     vm.run();
 }
 
-fn read_image(image_file: &String) -> bool {
+fn read_image(image_file: &str) -> bool {
     todo!()
 }
