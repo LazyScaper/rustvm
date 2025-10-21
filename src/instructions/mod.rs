@@ -5,6 +5,7 @@ pub mod add;
 pub mod and;
 pub mod branch;
 pub mod ldi;
+pub mod not;
 pub mod opcodes;
 
 fn sign_extend(input: u16, bit_count: u16) -> u16 {

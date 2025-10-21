@@ -5,6 +5,7 @@ use crate::instructions::add::add;
 use crate::instructions::and::and;
 use crate::instructions::branch::br;
 use crate::instructions::ldi::load_indirect;
+use crate::instructions::not::not;
 use crate::instructions::opcodes::Opcode;
 use crate::registers::register::Register;
 use crate::registers::ConditionFlag;
@@ -60,7 +61,7 @@ impl Vm {
             Opcode::Ldr => {}
             Opcode::Str => {}
             Opcode::Rti => {}
-            Opcode::Not => {}
+            Opcode::Not => not(&mut self.registers, instruction),
             Opcode::Ldi => load_indirect(&mut self.registers, self.memory, instruction),
             Opcode::Sti => {}
             Opcode::Jmp => {}
