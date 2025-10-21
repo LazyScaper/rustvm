@@ -7,6 +7,7 @@ pub mod branch;
 pub mod jump;
 pub mod jump_register;
 pub mod ldi;
+pub mod load;
 pub mod not;
 pub mod opcodes;
 
