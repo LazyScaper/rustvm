@@ -4,6 +4,7 @@ use crate::registers::ConditionFlag;
 pub mod add;
 pub mod and;
 pub mod branch;
+pub mod jump;
 pub mod ldi;
 pub mod not;
 pub mod opcodes;

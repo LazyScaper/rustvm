@@ -4,6 +4,7 @@ mod registers;
 use crate::instructions::add::add;
 use crate::instructions::and::and;
 use crate::instructions::branch::br;
+use crate::instructions::jump::jmp;
 use crate::instructions::ldi::load_indirect;
 use crate::instructions::not::not;
 use crate::instructions::opcodes::Opcode;
@@ -60,14 +61,15 @@ impl Vm {
             Opcode::And => and(&mut self.registers, instruction),
             Opcode::Ldr => {}
             Opcode::Str => {}
-            Opcode::Rti => {}
             Opcode::Not => not(&mut self.registers, instruction),
             Opcode::Ldi => load_indirect(&mut self.registers, self.memory, instruction),
             Opcode::Sti => {}
-            Opcode::Jmp => {}
-            Opcode::Res => {}
+            Opcode::Jmp => jmp(&mut self.registers, instruction),
             Opcode::Lea => {}
             Opcode::Trap => {}
+            Opcode::Res | Opcode::Rti => {
+                return false;
+            }
         }
 
         true
