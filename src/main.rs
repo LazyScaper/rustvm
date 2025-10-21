@@ -5,6 +5,7 @@ use crate::instructions::add::add;
 use crate::instructions::and::and;
 use crate::instructions::branch::br;
 use crate::instructions::jump::jmp;
+use crate::instructions::jump_register::jsr;
 use crate::instructions::ldi::load_indirect;
 use crate::instructions::not::not;
 use crate::instructions::opcodes::Opcode;
@@ -57,7 +58,7 @@ impl Vm {
             Opcode::Add => add(&mut self.registers, instruction),
             Opcode::Ld => {}
             Opcode::St => {}
-            Opcode::Jsr => {}
+            Opcode::Jsr => jsr(&mut self.registers, instruction),
             Opcode::And => and(&mut self.registers, instruction),
             Opcode::Ldr => {}
             Opcode::Str => {}

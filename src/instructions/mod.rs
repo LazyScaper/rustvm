@@ -5,6 +5,7 @@ pub mod add;
 pub mod and;
 pub mod branch;
 pub mod jump;
+pub mod jump_register;
 pub mod ldi;
 pub mod not;
 pub mod opcodes;
