@@ -10,6 +10,7 @@ use crate::instructions::ldi::load_indirect;
 use crate::instructions::load::ld;
 use crate::instructions::not::not;
 use crate::instructions::opcodes::Opcode;
+use crate::instructions::store::st;
 use crate::registers::register::Register;
 use crate::registers::ConditionFlag;
 use std::env;
@@ -58,7 +59,7 @@ impl Vm {
             Opcode::Br => br(&mut self.registers, instruction),
             Opcode::Add => add(&mut self.registers, instruction),
             Opcode::Ld => ld(&mut self.registers, self.memory, instruction),
-            Opcode::St => {}
+            Opcode::St => st(&mut self.registers, &mut self.memory, instruction),
             Opcode::Jsr => jsr(&mut self.registers, instruction),
             Opcode::And => and(&mut self.registers, instruction),
             Opcode::Ldr => {}
