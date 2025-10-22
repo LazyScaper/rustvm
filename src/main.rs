@@ -12,6 +12,7 @@ use crate::instructions::load_register::ldr;
 use crate::instructions::not::not;
 use crate::instructions::opcodes::Opcode;
 use crate::instructions::store::st;
+use crate::instructions::store_indirect::sti;
 use crate::instructions::store_register::str;
 use crate::registers::register::Register;
 use crate::registers::ConditionFlag;
@@ -68,7 +69,7 @@ impl Vm {
             Opcode::Str => str(&mut self.registers, &mut self.memory, instruction),
             Opcode::Not => not(&mut self.registers, instruction),
             Opcode::Ldi => load_indirect(&mut self.registers, &self.memory, instruction),
-            Opcode::Sti => {}
+            Opcode::Sti => sti(&mut self.registers, &mut self.memory, instruction),
             Opcode::Jmp => jmp(&mut self.registers, instruction),
             Opcode::Lea => {}
             Opcode::Trap => {}
