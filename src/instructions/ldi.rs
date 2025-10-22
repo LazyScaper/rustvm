@@ -2,7 +2,7 @@ use crate::instructions::{sign_extend, update_flags};
 use crate::registers::register::Register::{Count, Pc};
 use crate::MEMORY_MAX;
 
-pub fn load_indirect(
+pub fn ldi(
     registers: &mut [u16; (Count as u16) as usize],
     memory: &[u16; MEMORY_MAX],
     instruction: u16,
@@ -18,7 +18,7 @@ pub fn load_indirect(
 
 #[cfg(test)]
 mod tests {
-    use crate::instructions::ldi::load_indirect;
+    use crate::instructions::ldi::ldi;
     use crate::registers::register::Register;
     use crate::Vm;
 
@@ -32,7 +32,7 @@ mod tests {
         vm.write_to_memory(0x4000, 42); // Actual value
 
         // LDI R2, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
 
         assert_eq!(vm.registers[Register::R2 as usize], 42);
     }
@@ -45,7 +45,7 @@ mod tests {
         vm.write_to_memory(0x4000, 123); // Actual value
 
         // LDI R3, 5
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_011_000000101);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_011_000000101);
 
         assert_eq!(vm.registers[Register::R3 as usize], 123);
     }
@@ -58,7 +58,7 @@ mod tests {
         vm.write_to_memory(0x5000, 99); // Actual value
 
         // LDI R1, -8 (offset = 0x1F8 in 9-bit two's complement)
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_001_111111000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_001_111111000);
 
         assert_eq!(vm.registers[Register::R1 as usize], 99);
     }
@@ -71,7 +71,7 @@ mod tests {
         vm.write_to_memory(0x4000, 77); // Actual value
 
         // LDI R4, 255 (max positive 9-bit offset)
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_100_011111111);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_100_011111111);
 
         assert_eq!(vm.registers[Register::R4 as usize], 77);
     }
@@ -84,7 +84,7 @@ mod tests {
         vm.write_to_memory(0x4000, 88); // Actual value
 
         // LDI R5, -256 (max negative 9-bit offset)
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_101_100000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_101_100000000);
 
         assert_eq!(vm.registers[Register::R5 as usize], 88);
     }
@@ -99,7 +99,7 @@ mod tests {
         vm.write_to_memory(0x4000, 11);
 
         // LDI R0, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_000_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_000_000000000);
 
         assert_eq!(vm.registers[Register::R0 as usize], 11);
     }
@@ -112,7 +112,7 @@ mod tests {
         vm.write_to_memory(0x4000, 22);
 
         // LDI R7, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_111_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_111_000000000);
 
         assert_eq!(vm.registers[Register::R7 as usize], 22);
     }
@@ -127,7 +127,7 @@ mod tests {
         vm.write_to_memory(0x4000, 0);
 
         // LDI R2, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
 
         assert_eq!(vm.registers[Register::R2 as usize], 0);
     }
@@ -140,7 +140,7 @@ mod tests {
         vm.write_to_memory(0x4000, 0x7FFF); // Max positive 16-bit signed value
 
         // LDI R3, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_011_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_011_000000000);
 
         assert_eq!(vm.registers[Register::R3 as usize], 0x7FFF);
     }
@@ -153,7 +153,7 @@ mod tests {
         vm.write_to_memory(0x4000, 0xFFFF); // -1 in two's complement
 
         // LDI R4, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_100_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_100_000000000);
 
         assert_eq!(vm.registers[Register::R4 as usize], 0xFFFF);
     }
@@ -166,7 +166,7 @@ mod tests {
         vm.write_to_memory(0x4000, 0xFFFF);
 
         // LDI R5, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_101_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_101_000000000);
 
         assert_eq!(vm.registers[Register::R5 as usize], 0xFFFF);
     }
@@ -181,7 +181,7 @@ mod tests {
         vm.write_to_memory(0x0010, 55); // Value in low memory
 
         // LDI R6, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_110_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_110_000000000);
 
         assert_eq!(vm.registers[Register::R6 as usize], 55);
     }
@@ -194,7 +194,7 @@ mod tests {
         vm.write_to_memory(0xFE00, 66); // Value in high memory
 
         // LDI R1, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_001_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_001_000000000);
 
         assert_eq!(vm.registers[Register::R1 as usize], 66);
     }
@@ -209,7 +209,7 @@ mod tests {
         vm.write_to_memory(0x6000, 111);
 
         // LDI R2, 3
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_010_000000011);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000011);
 
         assert_eq!(vm.registers[Register::R2 as usize], 111);
     }
@@ -222,7 +222,7 @@ mod tests {
         vm.write_to_memory(0x1000, 222);
 
         // LDI R3, 1
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_011_000000001);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_011_000000001);
 
         assert_eq!(vm.registers[Register::R3 as usize], 222);
     }
@@ -238,7 +238,7 @@ mod tests {
         vm.write_to_memory(0x4000, 42);
 
         // LDI R2, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
 
         assert_eq!(vm.registers[Register::R2 as usize], 42);
     }
@@ -259,11 +259,11 @@ mod tests {
         vm.write_to_memory(0x4100, 20);
 
         // First LDI R1, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_001_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_001_000000000);
         assert_eq!(vm.registers[Register::R1 as usize], 10);
 
         // Second LDI R2, 1
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_010_000000001);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000001);
         assert_eq!(vm.registers[Register::R2 as usize], 20);
     }
 
@@ -277,7 +277,7 @@ mod tests {
 
         // This is weird but valid - the pointer value is what matters
         // LDI R4, 0
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_100_000000000);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_100_000000000);
 
         assert_eq!(vm.registers[Register::R4 as usize], 33);
     }
@@ -292,7 +292,7 @@ mod tests {
         vm.write_to_memory(0x4000, 44);
 
         // LDI R5, -5 (0x1FB in 9-bit two's complement)
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_101_111111011);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_101_111111011);
 
         assert_eq!(vm.registers[Register::R5 as usize], 44);
     }
@@ -305,7 +305,7 @@ mod tests {
         vm.write_to_memory(0x4000, 55);
 
         // LDI R6, -1 (0x1FF in 9-bit two's complement)
-        load_indirect(&mut vm.registers, &vm.memory, 0b1010_110_111111111);
+        ldi(&mut vm.registers, &vm.memory, 0b1010_110_111111111);
 
         assert_eq!(vm.registers[Register::R6 as usize], 55);
     }
