@@ -12,6 +12,7 @@ pub mod load_register;
 pub mod not;
 pub mod opcodes;
 pub mod store;
+pub mod store_register;
 
 fn sign_extend(input: u16, bit_count: u16) -> u16 {
     let sign_bit = input >> (bit_count - 1);
