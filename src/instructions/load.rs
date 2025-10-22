@@ -4,7 +4,7 @@ use crate::MEMORY_MAX;
 
 pub fn ld(
     registers: &mut [u16; (Count as u16) as usize],
-    memory: [u16; MEMORY_MAX],
+    memory: &[u16; MEMORY_MAX],
     instruction: u16,
 ) {
     let destination_register = (instruction >> 9) & 0x7;
@@ -31,7 +31,7 @@ mod tests {
         vm.write_to_memory(0x3005, 42);
 
         // LD R2, 5 (load from PC + 5)
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000101);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000101);
 
         assert_eq!(vm.registers[Register::R2 as usize], 42);
     }
@@ -43,7 +43,7 @@ mod tests {
         vm.write_to_memory(0x3000, 123);
 
         // LD R3, 0 (load from PC + 0)
-        ld(&mut vm.registers, vm.memory, 0b0010_011_000000000);
+        ld(&mut vm.registers, &vm.memory, 0b0010_011_000000000);
 
         assert_eq!(vm.registers[Register::R3 as usize], 123);
     }
@@ -55,7 +55,7 @@ mod tests {
         vm.write_to_memory(0x3008, 99);
 
         // LD R1, -8 (0x1F8 in 9-bit two's complement)
-        ld(&mut vm.registers, vm.memory, 0b0010_001_111111000);
+        ld(&mut vm.registers, &vm.memory, 0b0010_001_111111000);
 
         assert_eq!(vm.registers[Register::R1 as usize], 99);
     }
@@ -67,7 +67,7 @@ mod tests {
         vm.write_to_memory(0x30FF, 255);
 
         // LD R4, 255 (max positive 9-bit offset)
-        ld(&mut vm.registers, vm.memory, 0b0010_100_011111111);
+        ld(&mut vm.registers, &vm.memory, 0b0010_100_011111111);
 
         assert_eq!(vm.registers[Register::R4 as usize], 255);
     }
@@ -79,7 +79,7 @@ mod tests {
         vm.write_to_memory(0x3000, 77);
 
         // LD R5, -256 (max negative 9-bit offset)
-        ld(&mut vm.registers, vm.memory, 0b0010_101_100000000);
+        ld(&mut vm.registers, &vm.memory, 0b0010_101_100000000);
 
         assert_eq!(vm.registers[Register::R5 as usize], 77);
     }
@@ -93,7 +93,7 @@ mod tests {
         vm.write_to_memory(0x3001, 111);
 
         // LD R0, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_000_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_000_000000001);
 
         assert_eq!(vm.registers[Register::R0 as usize], 111);
     }
@@ -105,7 +105,7 @@ mod tests {
         vm.write_to_memory(0x3002, 222);
 
         // LD R1, 2
-        ld(&mut vm.registers, vm.memory, 0b0010_001_000000010);
+        ld(&mut vm.registers, &vm.memory, 0b0010_001_000000010);
 
         assert_eq!(vm.registers[Register::R1 as usize], 222);
     }
@@ -117,7 +117,7 @@ mod tests {
         vm.write_to_memory(0x3003, 333);
 
         // LD R2, 3
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000011);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000011);
 
         assert_eq!(vm.registers[Register::R2 as usize], 333);
     }
@@ -129,7 +129,7 @@ mod tests {
         vm.write_to_memory(0x3004, 444);
 
         // LD R3, 4
-        ld(&mut vm.registers, vm.memory, 0b0010_011_000000100);
+        ld(&mut vm.registers, &vm.memory, 0b0010_011_000000100);
 
         assert_eq!(vm.registers[Register::R3 as usize], 444);
     }
@@ -141,7 +141,7 @@ mod tests {
         vm.write_to_memory(0x3005, 555);
 
         // LD R4, 5
-        ld(&mut vm.registers, vm.memory, 0b0010_100_000000101);
+        ld(&mut vm.registers, &vm.memory, 0b0010_100_000000101);
 
         assert_eq!(vm.registers[Register::R4 as usize], 555);
     }
@@ -153,7 +153,7 @@ mod tests {
         vm.write_to_memory(0x3006, 666);
 
         // LD R5, 6
-        ld(&mut vm.registers, vm.memory, 0b0010_101_000000110);
+        ld(&mut vm.registers, &vm.memory, 0b0010_101_000000110);
 
         assert_eq!(vm.registers[Register::R5 as usize], 666);
     }
@@ -165,7 +165,7 @@ mod tests {
         vm.write_to_memory(0x3007, 777);
 
         // LD R6, 7
-        ld(&mut vm.registers, vm.memory, 0b0010_110_000000111);
+        ld(&mut vm.registers, &vm.memory, 0b0010_110_000000111);
 
         assert_eq!(vm.registers[Register::R6 as usize], 777);
     }
@@ -177,7 +177,7 @@ mod tests {
         vm.write_to_memory(0x3008, 888);
 
         // LD R7, 8
-        ld(&mut vm.registers, vm.memory, 0b0010_111_000001000);
+        ld(&mut vm.registers, &vm.memory, 0b0010_111_000001000);
 
         assert_eq!(vm.registers[Register::R7 as usize], 888);
     }
@@ -191,7 +191,7 @@ mod tests {
         vm.write_to_memory(0x3001, 0);
 
         // LD R2, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000001);
 
         assert_eq!(vm.registers[Register::R2 as usize], 0);
     }
@@ -203,7 +203,7 @@ mod tests {
         vm.write_to_memory(0x3001, 0x7FFF); // Max positive 16-bit signed
 
         // LD R3, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_011_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_011_000000001);
 
         assert_eq!(vm.registers[Register::R3 as usize], 0x7FFF);
     }
@@ -215,7 +215,7 @@ mod tests {
         vm.write_to_memory(0x3001, 0xFFFF); // -1 in two's complement
 
         // LD R4, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_100_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_100_000000001);
 
         assert_eq!(vm.registers[Register::R4 as usize], 0xFFFF);
     }
@@ -227,7 +227,7 @@ mod tests {
         vm.write_to_memory(0x3001, 0xFFFF);
 
         // LD R5, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_101_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_101_000000001);
 
         assert_eq!(vm.registers[Register::R5 as usize], 0xFFFF);
     }
@@ -243,7 +243,7 @@ mod tests {
             vm.write_to_memory(0x3000 + i as u16, value);
 
             let instruction = 0b0010_000_000000000 | (i as u16);
-            ld(&mut vm.registers, vm.memory, instruction);
+            ld(&mut vm.registers, &vm.memory, instruction);
 
             assert_eq!(vm.registers[Register::R0 as usize], value);
         }
@@ -261,7 +261,7 @@ mod tests {
             vm.write_to_memory(pc + 10, 42);
 
             // LD R1, 10
-            ld(&mut vm.registers, vm.memory, 0b0010_001_000001010);
+            ld(&mut vm.registers, &vm.memory, 0b0010_001_000001010);
 
             assert_eq!(vm.registers[Register::R1 as usize], 42);
         }
@@ -274,7 +274,7 @@ mod tests {
         vm.write_to_memory(0x0015, 99);
 
         // LD R2, 5
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000101);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000101);
 
         assert_eq!(vm.registers[Register::R2 as usize], 99);
     }
@@ -286,7 +286,7 @@ mod tests {
         vm.write_to_memory(0xFE10, 88);
 
         // LD R3, 16
-        ld(&mut vm.registers, vm.memory, 0b0010_011_000010000);
+        ld(&mut vm.registers, &vm.memory, 0b0010_011_000010000);
 
         assert_eq!(vm.registers[Register::R3 as usize], 88);
     }
@@ -301,7 +301,7 @@ mod tests {
         vm.write_to_memory(0x3005, 42);
 
         // LD R2, 5
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000101);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000101);
 
         assert_eq!(vm.registers[Register::R2 as usize], 42);
     }
@@ -316,7 +316,7 @@ mod tests {
         vm.write_to_memory(0x3005, 42);
 
         // LD R2, 5
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000101);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000101);
 
         // Check other registers unchanged
         assert_eq!(vm.registers[Register::R0 as usize], 0x1111);
@@ -336,15 +336,15 @@ mod tests {
         vm.write_to_memory(0x3003, 30);
 
         // LD R1, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_001_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_001_000000001);
         assert_eq!(vm.registers[Register::R1 as usize], 10);
 
         // LD R2, 2
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000010);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000010);
         assert_eq!(vm.registers[Register::R2 as usize], 20);
 
         // LD R3, 3
-        ld(&mut vm.registers, vm.memory, 0b0010_011_000000011);
+        ld(&mut vm.registers, &vm.memory, 0b0010_011_000000011);
         assert_eq!(vm.registers[Register::R3 as usize], 30);
     }
 
@@ -355,15 +355,15 @@ mod tests {
         vm.write_to_memory(0x3005, 42);
 
         // LD R1, 5
-        ld(&mut vm.registers, vm.memory, 0b0010_001_000000101);
+        ld(&mut vm.registers, &vm.memory, 0b0010_001_000000101);
         assert_eq!(vm.registers[Register::R1 as usize], 42);
 
         // LD R2, 5 (same location)
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000101);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000101);
         assert_eq!(vm.registers[Register::R2 as usize], 42);
 
         // LD R3, 5 (same location again)
-        ld(&mut vm.registers, vm.memory, 0b0010_011_000000101);
+        ld(&mut vm.registers, &vm.memory, 0b0010_011_000000101);
         assert_eq!(vm.registers[Register::R3 as usize], 42);
     }
 
@@ -376,7 +376,7 @@ mod tests {
         vm.write_to_memory(0x3000, 55);
 
         // LD R4, -1 (0x1FF in 9-bit two's complement)
-        ld(&mut vm.registers, vm.memory, 0b0010_100_111111111);
+        ld(&mut vm.registers, &vm.memory, 0b0010_100_111111111);
 
         assert_eq!(vm.registers[Register::R4 as usize], 55);
     }
@@ -388,7 +388,7 @@ mod tests {
         vm.write_to_memory(0x3001, 66);
 
         // LD R5, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_101_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_101_000000001);
 
         assert_eq!(vm.registers[Register::R5 as usize], 66);
     }
@@ -400,7 +400,7 @@ mod tests {
         vm.write_to_memory(0x3000, 123);
 
         // LD R6, -80 (0x1B0 in 9-bit two's complement)
-        ld(&mut vm.registers, vm.memory, 0b0010_110_110110000);
+        ld(&mut vm.registers, &vm.memory, 0b0010_110_110110000);
 
         assert_eq!(vm.registers[Register::R6 as usize], 123);
     }
@@ -425,7 +425,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x30F0);
 
         // LD R0, 16 (0x30F0 + 16 = 0x3100)
-        ld(&mut vm.registers, vm.memory, 0b0010_000_000010000);
+        ld(&mut vm.registers, &vm.memory, 0b0010_000_000010000);
         assert_eq!(vm.registers[Register::R0 as usize], 100);
     }
 
@@ -440,11 +440,11 @@ mod tests {
         vm.write_to_memory(0x3003, 0x0043); // 'C'
 
         // LD R1, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_001_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_001_000000001);
         assert_eq!(vm.registers[Register::R1 as usize], 0x0041);
 
         // LD R2, 2
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000010);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000010);
         assert_eq!(vm.registers[Register::R2 as usize], 0x0042);
     }
 
@@ -457,7 +457,7 @@ mod tests {
         vm.write_to_memory(0xFFFF, 0xDEAD);
 
         // LD R7, 15
-        ld(&mut vm.registers, vm.memory, 0b0010_111_000001111);
+        ld(&mut vm.registers, &vm.memory, 0b0010_111_000001111);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0xDEAD);
     }
@@ -469,7 +469,7 @@ mod tests {
         vm.write_to_memory(0x0000, 0xBEEF);
 
         // LD R0, -5 (0x1FB in 9-bit two's complement)
-        ld(&mut vm.registers, vm.memory, 0b0010_000_111111011);
+        ld(&mut vm.registers, &vm.memory, 0b0010_000_111111011);
 
         assert_eq!(vm.registers[Register::R0 as usize], 0xBEEF);
     }
@@ -483,7 +483,7 @@ mod tests {
         vm.write_to_memory(0x3001, 0xAAAA);
 
         // LD R1, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_001_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_001_000000001);
 
         assert_eq!(vm.registers[Register::R1 as usize], 0xAAAA);
     }
@@ -495,7 +495,7 @@ mod tests {
         vm.write_to_memory(0x3001, 0xFFFF);
 
         // LD R2, 1
-        ld(&mut vm.registers, vm.memory, 0b0010_010_000000001);
+        ld(&mut vm.registers, &vm.memory, 0b0010_010_000000001);
 
         assert_eq!(vm.registers[Register::R2 as usize], 0xFFFF);
     }

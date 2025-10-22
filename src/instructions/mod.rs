@@ -8,6 +8,7 @@ pub mod jump;
 pub mod jump_register;
 pub mod ldi;
 pub mod load;
+pub mod load_register;
 pub mod not;
 pub mod opcodes;
 pub mod store;
