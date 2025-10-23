@@ -15,6 +15,7 @@ use crate::instructions::opcodes::Opcode;
 use crate::instructions::store::st;
 use crate::instructions::store_indirect::sti;
 use crate::instructions::store_register::str;
+use crate::instructions::trap::trap;
 use crate::registers::register::Register;
 use crate::registers::ConditionFlag;
 use std::env;
@@ -73,7 +74,7 @@ impl Vm {
             Opcode::Sti => sti(&mut self.registers, &mut self.memory, instruction),
             Opcode::Jmp => jmp(&mut self.registers, instruction),
             Opcode::Lea => lea(&mut self.registers, instruction),
-            Opcode::Trap => {}
+            Opcode::Trap => trap(&mut self.registers, instruction),
             Opcode::Res | Opcode::Rti => {
                 return false;
             }
