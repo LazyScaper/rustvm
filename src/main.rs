@@ -8,6 +8,7 @@ use crate::instructions::jump::jmp;
 use crate::instructions::jump_register::jsr;
 use crate::instructions::ldi::ldi;
 use crate::instructions::load::ld;
+use crate::instructions::load_effective::lea;
 use crate::instructions::load_register::ldr;
 use crate::instructions::not::not;
 use crate::instructions::opcodes::Opcode;
@@ -71,7 +72,7 @@ impl Vm {
             Opcode::Ldi => ldi(&mut self.registers, &self.memory, instruction),
             Opcode::Sti => sti(&mut self.registers, &mut self.memory, instruction),
             Opcode::Jmp => jmp(&mut self.registers, instruction),
-            Opcode::Lea => {}
+            Opcode::Lea => lea(&mut self.registers, instruction),
             Opcode::Trap => {}
             Opcode::Res | Opcode::Rti => {
                 return false;
