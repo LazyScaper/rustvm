@@ -74,7 +74,7 @@ impl Vm {
             Opcode::Sti => sti(&mut self.registers, &mut self.memory, instruction),
             Opcode::Jmp => jmp(&mut self.registers, instruction),
             Opcode::Lea => lea(&mut self.registers, instruction),
-            Opcode::Trap => trap(&mut self.registers, instruction),
+            Opcode::Trap => trap(&mut self.registers, &self.memory, instruction),
             Opcode::Res | Opcode::Rti => {
                 return false;
             }
