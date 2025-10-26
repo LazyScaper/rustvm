@@ -12,3 +12,9 @@ pub enum Register {
     Cond = 9,
     Count = 10,
 }
+
+pub enum MemoryMappedRegister
+{
+    MR_KBSR = 0xFE00, /* keyboard status */
+    MR_KBDR = 0xFE02  /* keyboard data */
+}

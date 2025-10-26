@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+byteorder = "1.5.0"
+windows = { version = "0.62.2", features = ["Win32", "Win32_System", "Win32_System_Console", "Win32_System_Threading"] }
