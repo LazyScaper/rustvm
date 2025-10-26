@@ -1,6 +1,6 @@
 use crate::instructions::update_flags;
-use crate::registers::register::Register::{Count, Pc, R0, R7};
-use crate::MEMORY_MAX;
+use crate::registers::register::Register::{Pc, R0, R7};
+use crate::Vm;
 use std::io::{Read, Write};
 use std::{io, process};
 
@@ -11,30 +11,24 @@ const TRAP_IN: u16 = 0x23; /* get character from keyboard, echoed onto the termi
 const TRAP_PUTSP: u16 = 0x24; /* output a byte string */
 const TRAP_HALT: u16 = 0x25; /* halt the program */
 
-pub fn trap(
-    registers: &mut [u16; (Count as u16) as usize],
-    memory: &[u16; MEMORY_MAX],
-    instruction: u16,
-) {
-    registers[R7 as usize] = registers[Pc as usize];
+pub fn trap(vm: &mut Vm, instruction: u16) {
+    vm.registers[R7 as usize] = vm.registers[Pc as usize];
 
     match instruction & 0xFF {
         TRAP_GETC => {
-            let mut buffer = [0; 1];
-            if io::stdin().read_exact(&mut buffer).is_ok() {
-                registers[R0 as usize] = buffer[0] as u16;
-            }
-
-            update_flags(registers, R0 as u16)
+            // Use the VM's get_char which works with raw console mode
+            let c = vm.get_char();
+            vm.registers[R0 as usize] = c;
+            update_flags(&mut vm.registers, R0 as u16);
         }
         TRAP_OUT => {
-            print!("{}", registers[R0 as usize] as u8 as char);
+            print!("{}", vm.registers[R0 as usize] as u8 as char);
             io::stdout().flush().expect("Could not flush stdout");
         }
         TRAP_PUTS => {
-            let mut memory_address = registers[R0 as usize];
+            let mut memory_address = vm.registers[R0 as usize];
             loop {
-                let character = memory[memory_address as usize];
+                let character = vm.memory[memory_address as usize];
                 if character == 0x0000 {
                     break;
                 }
@@ -48,38 +42,33 @@ pub fn trap(
             print!("Enter a character: ");
             io::stdout().flush().unwrap();
 
-            let mut buffer = [0; 1];
-            if io::stdin().read_exact(&mut buffer).is_ok() {
-                let c = buffer[0];
-                print!("{}", c as char); // Echo the character
-                io::stdout().flush().unwrap();
-                registers[R0 as usize] = c as u16;
-            }
-            update_flags(registers, R0 as u16)
+            // Use the VM's get_char
+            let c = vm.get_char();
+            print!("{}", c as u8 as char); // Echo the character
+            io::stdout().flush().unwrap();
+            vm.registers[R0 as usize] = c;
+            update_flags(&mut vm.registers, R0 as u16);
         }
         TRAP_PUTSP => {
-            // Output a packed string (two ASCII chars per word, little-endian)
-            let mut memory_address = registers[R0 as usize];
+            let mut memory_address = vm.registers[R0 as usize];
             loop {
-                let word = memory[memory_address as usize];
+                let word = vm.memory[memory_address as usize];
                 if word == 0x0000 {
                     break;
                 }
 
-                // Low byte (first character)
                 let c1 = (word & 0xFF) as u8;
                 if c1 != 0 {
                     print!("{}", c1 as char);
                 } else {
-                    break; // Null terminator in low byte
+                    break;
                 }
 
-                // High byte (second character)
                 let c2 = ((word >> 8) & 0xFF) as u8;
                 if c2 != 0 {
                     print!("{}", c2 as char);
                 } else {
-                    break; // Null terminator in high byte
+                    break;
                 }
 
                 memory_address += 1;
@@ -97,7 +86,6 @@ pub fn trap(
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use crate::instructions::trap::trap;
@@ -113,7 +101,7 @@ mod tests {
         vm.write_to_register(Register::Pc, original_pc);
 
         // TRAP x20 (GETC)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100000);
+        trap(&mut vm, 0b1111_0000_00100000);
 
         // R7 should contain the return address (original PC)
         assert_eq!(vm.registers[Register::R7 as usize], original_pc);
@@ -127,7 +115,7 @@ mod tests {
         vm.write_to_register(Register::R7, 0xDEAD); // Pre-existing value
 
         // TRAP x20
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100000);
+        trap(&mut vm, 0b1111_0000_00100000);
 
         // R7 should be overwritten with return address
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
@@ -143,7 +131,7 @@ mod tests {
         // TRAP x20 (GETC) - native implementation
         // Note: Can't easily test stdin reading in unit tests
         // Just verify R7 is saved
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100000);
+        trap(&mut vm, 0b1111_0000_00100000);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -155,7 +143,7 @@ mod tests {
         vm.write_to_register(Register::R0, 0x0041); // 'A'
 
         // TRAP x21 (OUT) - outputs character in R0
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100001);
+        trap(&mut vm, 0b1111_0000_00100001);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
         // R0 should be unchanged
@@ -174,7 +162,7 @@ mod tests {
         vm.mem_write(0x4002, 0x0000); // null terminator
 
         // TRAP x22 (PUTS)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100010);
+        trap(&mut vm, 0b1111_0000_00100010);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
         // R0 should still point to string
@@ -188,7 +176,7 @@ mod tests {
 
         // TRAP x23 (IN) - native implementation
         // Note: Can't easily test stdin reading in unit tests
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100011);
+        trap(&mut vm, 0b1111_0000_00100011);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -204,7 +192,7 @@ mod tests {
         vm.mem_write(0x4001, 0x0000); // null terminator
 
         // TRAP x24 (PUTSP)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100100);
+        trap(&mut vm, 0b1111_0000_00100100);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -215,7 +203,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x25 (HALT)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100101);
+        trap(&mut vm, 0b1111_0000_00100101);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -228,7 +216,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x00 (user-defined or reserved)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00000000);
+        trap(&mut vm, 0b1111_0000_00000000);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -239,7 +227,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x01
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00000001);
+        trap(&mut vm, 0b1111_0000_00000001);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -250,7 +238,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP xFF (max trap vector)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_11111111);
+        trap(&mut vm, 0b1111_0000_11111111);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -266,7 +254,7 @@ mod tests {
             vm.write_to_register(Register::Pc, pc);
 
             // TRAP x25
-            trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100101);
+            trap(&mut vm, 0b1111_0000_00100101);
 
             assert_eq!(vm.registers[Register::R7 as usize], pc);
         }
@@ -278,7 +266,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x0200);
 
         // TRAP x20
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100000);
+        trap(&mut vm, 0b1111_0000_00100000);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x0200);
     }
@@ -289,7 +277,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0xF000);
 
         // TRAP x20
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100000);
+        trap(&mut vm, 0b1111_0000_00100000);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0xF000);
     }
@@ -309,7 +297,7 @@ mod tests {
         vm.write_to_register(Register::R6, 0x7777);
 
         // TRAP x25 (HALT doesn't modify registers)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100101);
+        trap(&mut vm, 0b1111_0000_00100101);
 
         // Check all registers R0-R6 unchanged
         assert_eq!(vm.registers[Register::R0 as usize], 0x1111);
@@ -329,14 +317,14 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x20
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100000);
+        trap(&mut vm, 0b1111_0000_00100000);
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
 
         // Update PC as if continuing execution
         vm.write_to_register(Register::Pc, 0x3010);
 
         // TRAP x21
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100001);
+        trap(&mut vm, 0b1111_0000_00100001);
         assert_eq!(vm.registers[Register::R7 as usize], 0x3010);
     }
 
@@ -346,13 +334,13 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // First TRAP
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100000);
+        trap(&mut vm, 0b1111_0000_00100000);
         let first_return = vm.registers[Register::R7 as usize];
         assert_eq!(first_return, 0x3000);
 
         // Second TRAP (nested - would overwrite R7)
         vm.write_to_register(Register::Pc, 0x0410);
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100001);
+        trap(&mut vm, 0b1111_0000_00100001);
         let second_return = vm.registers[Register::R7 as usize];
         assert_eq!(second_return, 0x0410);
     }
@@ -372,7 +360,7 @@ mod tests {
             vm.write_to_register(Register::R7, 0); // Clear R7
 
             let instruction = 0b1111_0000_00000000 | vector;
-            trap(&mut vm.registers, &vm.memory, instruction);
+            trap(&mut vm, instruction);
 
             assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
         }
@@ -386,7 +374,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x25
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100101);
+        trap(&mut vm, 0b1111_0000_00100101);
 
         let return_address = vm.registers[Register::R7 as usize];
         assert_eq!(return_address, 0x3000);
@@ -403,7 +391,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0);
 
         // TRAP x00
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00000000);
+        trap(&mut vm, 0b1111_0000_00000000);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0);
     }
@@ -420,7 +408,7 @@ mod tests {
         vm.mem_write(0x4000, 0x0000);
 
         // TRAP x22 (PUTS)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100010);
+        trap(&mut vm, 0b1111_0000_00100010);
 
         // R0 should still point to string
         assert_eq!(vm.registers[Register::R0 as usize], 0x4000);
@@ -441,7 +429,7 @@ mod tests {
         vm.mem_write(0x4005, 0x0000); // null
 
         // TRAP x22 (PUTS)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100010);
+        trap(&mut vm, 0b1111_0000_00100010);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -458,7 +446,7 @@ mod tests {
         vm.mem_write(0x4002, 0x0000); // null
 
         // TRAP x24 (PUTSP)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100100);
+        trap(&mut vm, 0b1111_0000_00100100);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -471,7 +459,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x30 (user-defined)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00110000);
+        trap(&mut vm, 0b1111_0000_00110000);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -487,7 +475,7 @@ mod tests {
             vm.write_to_register(Register::R7, 0); // Clear R7
 
             let instruction = 0b1111_0000_00000000 | i;
-            trap(&mut vm.registers, &vm.memory, instruction);
+            trap(&mut vm, instruction);
 
             assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
         }
@@ -501,7 +489,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP xFF (last possible trap vector)
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_11111111);
+        trap(&mut vm, 0b1111_0000_11111111);
 
         assert_eq!(vm.registers[Register::R7 as usize], 0x3000);
     }
@@ -516,7 +504,7 @@ mod tests {
         vm.write_to_register(Register::R2, 0x2222);
 
         // TRAP x20 (GETC) - modifies R0 but should preserve others
-        trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100000);
+        trap(&mut vm, 0b1111_0000_00100000);
 
         assert_eq!(vm.registers[Register::R1 as usize], 0x1111);
         assert_eq!(vm.registers[Register::R2 as usize], 0x2222);

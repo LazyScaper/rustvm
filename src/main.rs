@@ -24,13 +24,13 @@ use std::io::{BufReader, Read};
 use std::process::exit;
 use std::sync::OnceLock;
 use std::{env, io};
-use windows::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE, WAIT_OBJECT_0};
+use windows::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
+use windows::Win32::System::Console::CONSOLE_MODE;
 use windows::Win32::System::Console::{
-    FlushConsoleInputBuffer, GetConsoleMode, GetStdHandle, SetConsoleMode, ENABLE_ECHO_INPUT,
-    ENABLE_LINE_INPUT, STD_INPUT_HANDLE,
+    FlushConsoleInputBuffer, GetConsoleMode, GetStdHandle, PeekConsoleInputW, ReadConsoleInputW,
+    SetConsoleMode, ENABLE_ECHO_INPUT, ENABLE_LINE_INPUT, INPUT_RECORD, KEY_EVENT,
+    STD_INPUT_HANDLE,
 };
-use windows::Win32::System::Console::{GetNumberOfConsoleInputEvents, CONSOLE_MODE};
-use windows::Win32::System::Threading::WaitForSingleObject;
 
 static H_STDIN_RAW: OnceLock<isize> = OnceLock::new();
 static mut FDW_OLD_MODE: CONSOLE_MODE = CONSOLE_MODE(0);
@@ -100,7 +100,8 @@ impl Vm {
         if address == MemoryMappedRegister::MR_KBSR as u16 {
             if self.check_key() {
                 self.memory[MemoryMappedRegister::MR_KBSR as usize] = 1 << 15;
-                self.memory[MemoryMappedRegister::MR_KBDR as usize] = self.get_char();
+                let c = self.get_char();
+                self.memory[MemoryMappedRegister::MR_KBDR as usize] = c;
             } else {
                 self.memory[MemoryMappedRegister::MR_KBSR as usize] = 0
             }
@@ -112,11 +113,17 @@ impl Vm {
     fn check_key(&self) -> bool {
         unsafe {
             if let Some(h_stdin) = self.get_handle() {
-                let wait_result = WaitForSingleObject(h_stdin, 1);
-                if wait_result == WAIT_OBJECT_0 {
-                    let mut events: u32 = 0;
-                    if GetNumberOfConsoleInputEvents(h_stdin, &mut events).is_ok() && events > 0 {
-                        return true;
+                let mut buffer: [INPUT_RECORD; 128] = std::mem::zeroed();
+                let mut events_read: u32 = 0;
+
+                if PeekConsoleInputW(h_stdin, &mut buffer, &mut events_read).is_ok() {
+                    for i in 0..events_read as usize {
+                        if buffer[i].EventType == KEY_EVENT as u16 {
+                            let key_event = buffer[i].Event.KeyEvent;
+                            if key_event.bKeyDown.as_bool() && key_event.uChar.AsciiChar != 0 {
+                                return true;
+                            }
+                        }
                     }
                 }
             }
@@ -124,6 +131,29 @@ impl Vm {
         }
     }
 
+    fn get_char(&mut self) -> u16 {
+        unsafe {
+            if let Some(h_stdin) = self.get_handle() {
+                let mut buffer: [INPUT_RECORD; 128] = std::mem::zeroed();
+                let mut events_read: u32 = 0;
+
+                loop {
+                    if ReadConsoleInputW(h_stdin, &mut buffer, &mut events_read).is_ok() {
+                        for i in 0..events_read as usize {
+                            if buffer[i].EventType == KEY_EVENT as u16 {
+                                let key_event = buffer[i].Event.KeyEvent;
+                                // Only process key DOWN events with an ASCII character
+                                if key_event.bKeyDown.as_bool() && key_event.uChar.AsciiChar != 0 {
+                                    return key_event.uChar.AsciiChar as u16;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            panic!("Failed to read character");
+        }
+    }
     fn get_handle(&self) -> Option<HANDLE> {
         H_STDIN_RAW.get().map(|&raw| HANDLE(raw as *mut _))
     }
@@ -153,7 +183,7 @@ impl Vm {
             Opcode::Sti => sti(self, instruction),
             Opcode::Jmp => jmp(&mut self.registers, instruction),
             Opcode::Lea => lea(&mut self.registers, instruction),
-            Opcode::Trap => trap(&mut self.registers, &self.memory, instruction),
+            Opcode::Trap => trap(self, instruction),
             Opcode::Res | Opcode::Rti => {
                 return false;
             }
@@ -175,14 +205,6 @@ impl Vm {
         let instruction: u16 = self.memory[address_of_instruction as usize];
         self.registers[Register::Pc as usize] += 1;
         instruction
-    }
-
-    fn get_char(&self) -> u16 {
-        let mut buffer = [0; 1];
-        match io::stdin().read_exact(&mut buffer) {
-            Ok(_) => buffer[0] as u16,
-            _ => panic!("Error reading from stdin"),
-        }
     }
 
     pub fn disable_input_buffering(&self) -> windows::core::Result<()> {
