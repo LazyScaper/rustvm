@@ -112,7 +112,7 @@ impl Vm {
     fn check_key(&self) -> bool {
         unsafe {
             if let Some(h_stdin) = self.get_handle() {
-                let wait_result = WaitForSingleObject(h_stdin, 1000);
+                let wait_result = WaitForSingleObject(h_stdin, 1);
                 if wait_result == WAIT_OBJECT_0 {
                     let mut events: u32 = 0;
                     if GetNumberOfConsoleInputEvents(h_stdin, &mut events).is_ok() && events > 0 {
@@ -173,6 +173,7 @@ impl Vm {
     fn fetch(&mut self) -> u16 {
         let address_of_instruction = self.registers[Register::Pc as usize];
         let instruction: u16 = self.memory[address_of_instruction as usize];
+        self.registers[Register::Pc as usize] += 1;
         instruction
     }
 
@@ -222,13 +223,12 @@ fn main() {
 
     let mut vm = Vm::new();
 
+    vm.disable_input_buffering();
+
     match args.len() {
-        // 1 => {
-        //     println!("Usage: {} [image-file1]...", args[0]);
-        //     exit(2)
-        // }
         1 => {
-            vm.read_file("C:\\Users\\Jake\\workspace\\rustvm\\2048.obj");
+            println!("Usage: {} [image-file1]...", args[0]);
+            exit(2)
         }
         _ => {
             for image_file in args {
