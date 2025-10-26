@@ -1,7 +1,8 @@
+use crate::instructions::update_flags;
 use crate::registers::register::Register::{Count, Pc, R0, R7};
 use crate::MEMORY_MAX;
-use std::io;
-use std::io::Write;
+use std::{io, process};
+use std::io::{Read, Write};
 
 const TRAP_GETC: u16 = 0x20; /* get character from keyboard, not echoed onto the terminal */
 const TRAP_OUT: u16 = 0x21; /* output a character */
@@ -18,8 +19,18 @@ pub fn trap(
     registers[R7 as usize] = registers[Pc as usize];
 
     match instruction & 0xFF {
-        TRAP_GETC => {}
-        TRAP_OUT => {}
+        TRAP_GETC => {
+            let mut buffer = [0; 1];
+            if io::stdin().read_exact(&mut buffer).is_ok() {
+                registers[R0 as usize] = buffer[0] as u16;
+            }
+
+            update_flags(registers, R0 as u16)
+        }
+        TRAP_OUT => {
+            print!("{}", registers[R0 as usize] as u8 as char);
+            io::stdout().flush().expect("Could not flush stdout");
+        }
         TRAP_PUTS => {
             let mut memory_address = registers[R0 as usize];
             loop {
@@ -33,10 +44,57 @@ pub fn trap(
             }
             io::stdout().flush().expect("Could not flush stdout");
         }
-        TRAP_IN => {}
-        TRAP_PUTSP => {}
-        TRAP_HALT => {}
-        _ => {}
+        TRAP_IN => {
+            print!("Enter a character: ");
+            io::stdout().flush().unwrap();
+
+            let mut buffer = [0; 1];
+            if io::stdin().read_exact(&mut buffer).is_ok() {
+                let c = buffer[0];
+                print!("{}", c as char); // Echo the character
+                io::stdout().flush().unwrap();
+                registers[R0 as usize] = c as u16;
+            }
+            update_flags(registers, R0 as u16)
+        }
+        TRAP_PUTSP => {
+            // Output a packed string (two ASCII chars per word, little-endian)
+            let mut memory_address = registers[R0 as usize];
+            loop {
+                let word = memory[memory_address as usize];
+                if word == 0x0000 {
+                    break;
+                }
+
+                // Low byte (first character)
+                let c1 = (word & 0xFF) as u8;
+                if c1 != 0 {
+                    print!("{}", c1 as char);
+                } else {
+                    break; // Null terminator in low byte
+                }
+
+                // High byte (second character)
+                let c2 = ((word >> 8) & 0xFF) as u8;
+                if c2 != 0 {
+                    print!("{}", c2 as char);
+                } else {
+                    break; // Null terminator in high byte
+                }
+
+                memory_address += 1;
+            }
+            io::stdout().flush().unwrap();
+        }
+        TRAP_HALT => {
+            println!("\n--- HALT ---");
+            io::stdout().flush().unwrap();
+            process::exit(1);
+        }
+        _ => {
+            eprintln!("Unknown trap code: 0x{:02X}", instruction & 0xFF);
+            process::exit(1);
+        }
     }
 }
 
