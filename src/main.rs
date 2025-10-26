@@ -163,7 +163,7 @@ impl Vm {
     }
 
     fn decode(instruction: u16) -> Opcode {
-        let opcode: Opcode = match Opcode::get(instruction) {
+        let opcode: Opcode = match Opcode::get(instruction >> 12) {
             Some(opcode) => opcode,
             None => panic!("Invalid opcode {:X}", instruction),
         };
@@ -228,7 +228,7 @@ fn main() {
         //     exit(2)
         // }
         1 => {
-           vm.read_file("C:\\Users\\Jake\\workspace\\rustvm\\2048.obj");
+            vm.read_file("C:\\Users\\Jake\\workspace\\rustvm\\2048.obj");
         }
         _ => {
             for image_file in args {
