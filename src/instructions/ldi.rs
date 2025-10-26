@@ -28,8 +28,8 @@ mod tests {
     fn should_load_value_with_zero_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x4000); // Pointer at PC
-        vm.write_to_memory(0x4000, 42); // Actual value
+        vm.mem_write(0x3000, 0x4000); // Pointer at PC
+        vm.mem_write(0x4000, 42); // Actual value
 
         // LDI R2, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
@@ -41,8 +41,8 @@ mod tests {
     fn should_load_value_with_positive_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3005, 0x4000); // Pointer at PC + 5
-        vm.write_to_memory(0x4000, 123); // Actual value
+        vm.mem_write(0x3005, 0x4000); // Pointer at PC + 5
+        vm.mem_write(0x4000, 123); // Actual value
 
         // LDI R3, 5
         ldi(&mut vm.registers, &vm.memory, 0b1010_011_000000101);
@@ -54,8 +54,8 @@ mod tests {
     fn should_load_value_with_negative_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3010);
-        vm.write_to_memory(0x3008, 0x5000); // Pointer at PC - 8
-        vm.write_to_memory(0x5000, 99); // Actual value
+        vm.mem_write(0x3008, 0x5000); // Pointer at PC - 8
+        vm.mem_write(0x5000, 99); // Actual value
 
         // LDI R1, -8 (offset = 0x1F8 in 9-bit two's complement)
         ldi(&mut vm.registers, &vm.memory, 0b1010_001_111111000);
@@ -67,8 +67,8 @@ mod tests {
     fn should_load_value_with_max_positive_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x30FF, 0x4000); // Pointer at PC + 255
-        vm.write_to_memory(0x4000, 77); // Actual value
+        vm.mem_write(0x30FF, 0x4000); // Pointer at PC + 255
+        vm.mem_write(0x4000, 77); // Actual value
 
         // LDI R4, 255 (max positive 9-bit offset)
         ldi(&mut vm.registers, &vm.memory, 0b1010_100_011111111);
@@ -80,8 +80,8 @@ mod tests {
     fn should_load_value_with_max_negative_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3100);
-        vm.write_to_memory(0x3000, 0x4000); // Pointer at PC - 256
-        vm.write_to_memory(0x4000, 88); // Actual value
+        vm.mem_write(0x3000, 0x4000); // Pointer at PC - 256
+        vm.mem_write(0x4000, 88); // Actual value
 
         // LDI R5, -256 (max negative 9-bit offset)
         ldi(&mut vm.registers, &vm.memory, 0b1010_101_100000000);
@@ -95,8 +95,8 @@ mod tests {
     fn should_load_into_r0() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x4000);
-        vm.write_to_memory(0x4000, 11);
+        vm.mem_write(0x3000, 0x4000);
+        vm.mem_write(0x4000, 11);
 
         // LDI R0, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_000_000000000);
@@ -108,8 +108,8 @@ mod tests {
     fn should_load_into_r7() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x4000);
-        vm.write_to_memory(0x4000, 22);
+        vm.mem_write(0x3000, 0x4000);
+        vm.mem_write(0x4000, 22);
 
         // LDI R7, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_111_000000000);
@@ -123,8 +123,8 @@ mod tests {
     fn should_load_zero_value() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x4000);
-        vm.write_to_memory(0x4000, 0);
+        vm.mem_write(0x3000, 0x4000);
+        vm.mem_write(0x4000, 0);
 
         // LDI R2, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
@@ -136,8 +136,8 @@ mod tests {
     fn should_load_max_positive_value() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x4000);
-        vm.write_to_memory(0x4000, 0x7FFF); // Max positive 16-bit signed value
+        vm.mem_write(0x3000, 0x4000);
+        vm.mem_write(0x4000, 0x7FFF); // Max positive 16-bit signed value
 
         // LDI R3, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_011_000000000);
@@ -149,8 +149,8 @@ mod tests {
     fn should_load_negative_value() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x4000);
-        vm.write_to_memory(0x4000, 0xFFFF); // -1 in two's complement
+        vm.mem_write(0x3000, 0x4000);
+        vm.mem_write(0x4000, 0xFFFF); // -1 in two's complement
 
         // LDI R4, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_100_000000000);
@@ -162,8 +162,8 @@ mod tests {
     fn should_load_max_unsigned_value() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x4000);
-        vm.write_to_memory(0x4000, 0xFFFF);
+        vm.mem_write(0x3000, 0x4000);
+        vm.mem_write(0x4000, 0xFFFF);
 
         // LDI R5, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_101_000000000);
@@ -177,8 +177,8 @@ mod tests {
     fn should_handle_pointer_to_low_memory() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x0010); // Pointer to low memory
-        vm.write_to_memory(0x0010, 55); // Value in low memory
+        vm.mem_write(0x3000, 0x0010); // Pointer to low memory
+        vm.mem_write(0x0010, 55); // Value in low memory
 
         // LDI R6, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_110_000000000);
@@ -190,8 +190,8 @@ mod tests {
     fn should_handle_pointer_to_high_memory() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0xFE00); // Pointer to high memory
-        vm.write_to_memory(0xFE00, 66); // Value in high memory
+        vm.mem_write(0x3000, 0xFE00); // Pointer to high memory
+        vm.mem_write(0xFE00, 66); // Value in high memory
 
         // LDI R1, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_001_000000000);
@@ -205,8 +205,8 @@ mod tests {
     fn should_work_with_different_pc_values() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x5000);
-        vm.write_to_memory(0x5003, 0x6000);
-        vm.write_to_memory(0x6000, 111);
+        vm.mem_write(0x5003, 0x6000);
+        vm.mem_write(0x6000, 111);
 
         // LDI R2, 3
         ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000011);
@@ -218,8 +218,8 @@ mod tests {
     fn should_handle_pc_at_zero() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0);
-        vm.write_to_memory(0x0001, 0x1000);
-        vm.write_to_memory(0x1000, 222);
+        vm.mem_write(0x0001, 0x1000);
+        vm.mem_write(0x1000, 222);
 
         // LDI R3, 1
         ldi(&mut vm.registers, &vm.memory, 0b1010_011_000000001);
@@ -234,8 +234,8 @@ mod tests {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R2, 9999); // Pre-existing value
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x4000);
-        vm.write_to_memory(0x4000, 42);
+        vm.mem_write(0x3000, 0x4000);
+        vm.mem_write(0x4000, 42);
 
         // LDI R2, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_010_000000000);
@@ -251,12 +251,12 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // Setup first load
-        vm.write_to_memory(0x3000, 0x4000);
-        vm.write_to_memory(0x4000, 10);
+        vm.mem_write(0x3000, 0x4000);
+        vm.mem_write(0x4000, 10);
 
         // Setup second load
-        vm.write_to_memory(0x3001, 0x4100);
-        vm.write_to_memory(0x4100, 20);
+        vm.mem_write(0x3001, 0x4100);
+        vm.mem_write(0x4100, 20);
 
         // First LDI R1, 0
         ldi(&mut vm.registers, &vm.memory, 0b1010_001_000000000);
@@ -271,9 +271,9 @@ mod tests {
     fn should_handle_pointer_chain_at_same_location() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3000, 0x3000); // Pointer points to itself
-        vm.write_to_memory(0x3000, 0x4000); // But actually contains a different pointer
-        vm.write_to_memory(0x4000, 33);
+        vm.mem_write(0x3000, 0x3000); // Pointer points to itself
+        vm.mem_write(0x3000, 0x4000); // But actually contains a different pointer
+        vm.mem_write(0x4000, 33);
 
         // This is weird but valid - the pointer value is what matters
         // LDI R4, 0
@@ -288,8 +288,8 @@ mod tests {
     fn should_handle_negative_offset_wrapping() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x0005);
-        vm.write_to_memory(0x0000, 0x4000); // PC + (-5) = 0
-        vm.write_to_memory(0x4000, 44);
+        vm.mem_write(0x0000, 0x4000); // PC + (-5) = 0
+        vm.mem_write(0x4000, 44);
 
         // LDI R5, -5 (0x1FB in 9-bit two's complement)
         ldi(&mut vm.registers, &vm.memory, 0b1010_101_111111011);
@@ -301,8 +301,8 @@ mod tests {
     fn should_handle_offset_minus_one() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x2FFF, 0x4000); // PC - 1
-        vm.write_to_memory(0x4000, 55);
+        vm.mem_write(0x2FFF, 0x4000); // PC - 1
+        vm.mem_write(0x4000, 55);
 
         // LDI R6, -1 (0x1FF in 9-bit two's complement)
         ldi(&mut vm.registers, &vm.memory, 0b1010_110_111111111);

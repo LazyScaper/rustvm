@@ -1,17 +1,15 @@
 use crate::instructions::sign_extend;
-use crate::registers::register::Register::{Count, Pc};
-use crate::MEMORY_MAX;
+use crate::registers::register::Register::Pc;
+use crate::Vm;
 
-pub fn st(
-    registers: &mut [u16; (Count as u16) as usize],
-    memory: &mut [u16; MEMORY_MAX],
-    instruction: u16,
-) {
+pub fn st(vm: &mut Vm, instruction: u16) {
     let source_register = (instruction >> 9) & 0x7;
     let pc_offset = sign_extend(instruction & 0x1FF, 9);
 
-    memory[registers[Pc as usize].wrapping_add(pc_offset) as usize] =
-        registers[source_register as usize];
+    vm.mem_write(
+        vm.registers[Pc as usize].wrapping_add(pc_offset),
+        vm.registers[source_register as usize],
+    )
 }
 
 #[cfg(test)]
@@ -29,7 +27,7 @@ mod tests {
         vm.write_to_register(Register::R2, 42);
 
         // ST R2, 5 (store to PC + 5)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000101);
+        st(&mut vm, 0b0011_010_000000101);
 
         assert_eq!(vm.memory[0x3005], 42);
     }
@@ -41,7 +39,7 @@ mod tests {
         vm.write_to_register(Register::R3, 123);
 
         // ST R3, 0 (store to PC + 0)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_011_000000000);
+        st(&mut vm, 0b0011_011_000000000);
 
         assert_eq!(vm.memory[0x3000], 123);
     }
@@ -53,7 +51,7 @@ mod tests {
         vm.write_to_register(Register::R1, 99);
 
         // ST R1, -8 (0x1F8 in 9-bit two's complement)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_111111000);
+        st(&mut vm, 0b0011_001_111111000);
 
         assert_eq!(vm.memory[0x3008], 99);
     }
@@ -65,7 +63,7 @@ mod tests {
         vm.write_to_register(Register::R4, 255);
 
         // ST R4, 255 (max positive 9-bit offset)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_100_011111111);
+        st(&mut vm, 0b0011_100_011111111);
 
         assert_eq!(vm.memory[0x30FF], 255);
     }
@@ -77,7 +75,7 @@ mod tests {
         vm.write_to_register(Register::R5, 77);
 
         // ST R5, -256 (max negative 9-bit offset)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_101_100000000);
+        st(&mut vm, 0b0011_101_100000000);
 
         assert_eq!(vm.memory[0x3000], 77);
     }
@@ -91,7 +89,7 @@ mod tests {
         vm.write_to_register(Register::R0, 111);
 
         // ST R0, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_000_000000001);
+        st(&mut vm, 0b0011_000_000000001);
 
         assert_eq!(vm.memory[0x3001], 111);
     }
@@ -103,7 +101,7 @@ mod tests {
         vm.write_to_register(Register::R1, 222);
 
         // ST R1, 2
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000000010);
+        st(&mut vm, 0b0011_001_000000010);
 
         assert_eq!(vm.memory[0x3002], 222);
     }
@@ -115,7 +113,7 @@ mod tests {
         vm.write_to_register(Register::R2, 333);
 
         // ST R2, 3
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000011);
+        st(&mut vm, 0b0011_010_000000011);
 
         assert_eq!(vm.memory[0x3003], 333);
     }
@@ -127,7 +125,7 @@ mod tests {
         vm.write_to_register(Register::R3, 444);
 
         // ST R3, 4
-        st(&mut vm.registers, &mut vm.memory, 0b0011_011_000000100);
+        st(&mut vm, 0b0011_011_000000100);
 
         assert_eq!(vm.memory[0x3004], 444);
     }
@@ -139,7 +137,7 @@ mod tests {
         vm.write_to_register(Register::R4, 555);
 
         // ST R4, 5
-        st(&mut vm.registers, &mut vm.memory, 0b0011_100_000000101);
+        st(&mut vm, 0b0011_100_000000101);
 
         assert_eq!(vm.memory[0x3005], 555);
     }
@@ -151,7 +149,7 @@ mod tests {
         vm.write_to_register(Register::R5, 666);
 
         // ST R5, 6
-        st(&mut vm.registers, &mut vm.memory, 0b0011_101_000000110);
+        st(&mut vm, 0b0011_101_000000110);
 
         assert_eq!(vm.memory[0x3006], 666);
     }
@@ -163,7 +161,7 @@ mod tests {
         vm.write_to_register(Register::R6, 777);
 
         // ST R6, 7
-        st(&mut vm.registers, &mut vm.memory, 0b0011_110_000000111);
+        st(&mut vm, 0b0011_110_000000111);
 
         assert_eq!(vm.memory[0x3007], 777);
     }
@@ -175,7 +173,7 @@ mod tests {
         vm.write_to_register(Register::R7, 888);
 
         // ST R7, 8
-        st(&mut vm.registers, &mut vm.memory, 0b0011_111_000001000);
+        st(&mut vm, 0b0011_111_000001000);
 
         assert_eq!(vm.memory[0x3008], 888);
     }
@@ -187,10 +185,10 @@ mod tests {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R2, 0);
-        vm.write_to_memory(0x3001, 0xFFFF); // Pre-existing value
+        vm.mem_write(0x3001, 0xFFFF); // Pre-existing value
 
         // ST R2, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000001);
+        st(&mut vm, 0b0011_010_000000001);
 
         assert_eq!(vm.memory[0x3001], 0);
     }
@@ -202,7 +200,7 @@ mod tests {
         vm.write_to_register(Register::R3, 0x7FFF); // Max positive 16-bit signed
 
         // ST R3, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_011_000000001);
+        st(&mut vm, 0b0011_011_000000001);
 
         assert_eq!(vm.memory[0x3001], 0x7FFF);
     }
@@ -214,7 +212,7 @@ mod tests {
         vm.write_to_register(Register::R4, 0xFFFF); // -1 in two's complement
 
         // ST R4, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_100_000000001);
+        st(&mut vm, 0b0011_100_000000001);
 
         assert_eq!(vm.memory[0x3001], 0xFFFF);
     }
@@ -226,7 +224,7 @@ mod tests {
         vm.write_to_register(Register::R5, 0xFFFF);
 
         // ST R5, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_101_000000001);
+        st(&mut vm, 0b0011_101_000000001);
 
         assert_eq!(vm.memory[0x3001], 0xFFFF);
     }
@@ -242,7 +240,7 @@ mod tests {
             vm.write_to_register(Register::R0, value);
 
             let instruction = 0b0011_000_000000000 | (i as u16);
-            st(&mut vm.registers, &mut vm.memory, instruction);
+            st(&mut vm, instruction);
 
             assert_eq!(vm.memory[0x3000 + i], value);
         }
@@ -260,7 +258,7 @@ mod tests {
             vm.write_to_register(Register::R1, 42);
 
             // ST R1, 10
-            st(&mut vm.registers, &mut vm.memory, 0b0011_001_000001010);
+            st(&mut vm, 0b0011_001_000001010);
 
             assert_eq!(vm.memory[(pc + 10) as usize], 42);
         }
@@ -273,7 +271,7 @@ mod tests {
         vm.write_to_register(Register::R2, 99);
 
         // ST R2, 5
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000101);
+        st(&mut vm, 0b0011_010_000000101);
 
         assert_eq!(vm.memory[0x0015], 99);
     }
@@ -285,7 +283,7 @@ mod tests {
         vm.write_to_register(Register::R3, 88);
 
         // ST R3, 16
-        st(&mut vm.registers, &mut vm.memory, 0b0011_011_000010000);
+        st(&mut vm, 0b0011_011_000010000);
 
         assert_eq!(vm.memory[0xFE10], 88);
     }
@@ -297,10 +295,10 @@ mod tests {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R2, 42);
-        vm.write_to_memory(0x3005, 9999); // Pre-existing value
+        vm.mem_write(0x3005, 9999); // Pre-existing value
 
         // ST R2, 5
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000101);
+        st(&mut vm, 0b0011_010_000000101);
 
         assert_eq!(vm.memory[0x3005], 42);
     }
@@ -312,7 +310,7 @@ mod tests {
         vm.write_to_register(Register::R3, 123);
 
         // ST R3, 5
-        st(&mut vm.registers, &mut vm.memory, 0b0011_011_000000101);
+        st(&mut vm, 0b0011_011_000000101);
 
         // Source register should remain unchanged
         assert_eq!(vm.registers[Register::R3 as usize], 123);
@@ -329,7 +327,7 @@ mod tests {
         vm.write_to_register(Register::R3, 0x3333);
 
         // ST R2, 5
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000101);
+        st(&mut vm, 0b0011_010_000000101);
 
         // Check other registers unchanged
         assert_eq!(vm.registers[Register::R0 as usize], 0x1111);
@@ -343,11 +341,11 @@ mod tests {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R1, 42);
-        vm.write_to_memory(0x3004, 0xAAAA);
-        vm.write_to_memory(0x3006, 0xBBBB);
+        vm.mem_write(0x3004, 0xAAAA);
+        vm.mem_write(0x3006, 0xBBBB);
 
         // ST R1, 5 (to 0x3005)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000000101);
+        st(&mut vm, 0b0011_001_000000101);
 
         // Check neighboring memory unchanged
         assert_eq!(vm.memory[0x3004], 0xAAAA);
@@ -366,15 +364,15 @@ mod tests {
         vm.write_to_register(Register::R3, 30);
 
         // ST R1, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000000001);
+        st(&mut vm, 0b0011_001_000000001);
         assert_eq!(vm.memory[0x3001], 10);
 
         // ST R2, 2
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000010);
+        st(&mut vm, 0b0011_010_000000010);
         assert_eq!(vm.memory[0x3002], 20);
 
         // ST R3, 3
-        st(&mut vm.registers, &mut vm.memory, 0b0011_011_000000011);
+        st(&mut vm, 0b0011_011_000000011);
         assert_eq!(vm.memory[0x3003], 30);
     }
 
@@ -387,15 +385,15 @@ mod tests {
         vm.write_to_register(Register::R3, 30);
 
         // ST R1, 5
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000000101);
+        st(&mut vm, 0b0011_001_000000101);
         assert_eq!(vm.memory[0x3005], 10);
 
         // ST R2, 5 (overwrite)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000101);
+        st(&mut vm, 0b0011_010_000000101);
         assert_eq!(vm.memory[0x3005], 20);
 
         // ST R3, 5 (overwrite again)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_011_000000101);
+        st(&mut vm, 0b0011_011_000000101);
         assert_eq!(vm.memory[0x3005], 30);
     }
 
@@ -408,7 +406,7 @@ mod tests {
         vm.write_to_register(Register::R4, 55);
 
         // ST R4, -1 (0x1FF in 9-bit two's complement)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_100_111111111);
+        st(&mut vm, 0b0011_100_111111111);
 
         assert_eq!(vm.memory[0x3000], 55);
     }
@@ -420,7 +418,7 @@ mod tests {
         vm.write_to_register(Register::R5, 66);
 
         // ST R5, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_101_000000001);
+        st(&mut vm, 0b0011_101_000000001);
 
         assert_eq!(vm.memory[0x3001], 66);
     }
@@ -432,7 +430,7 @@ mod tests {
         vm.write_to_register(Register::R6, 123);
 
         // ST R6, -80 (0x1B0 in 9-bit two's complement)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_110_110110000);
+        st(&mut vm, 0b0011_110_110110000);
 
         assert_eq!(vm.memory[0x3000], 123);
     }
@@ -446,7 +444,7 @@ mod tests {
         vm.write_to_register(Register::R1, 42);
 
         // ST R1, 10
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000001010);
+        st(&mut vm, 0b0011_001_000001010);
 
         // Verify the store
         assert_eq!(vm.memory[0x300A], 42);
@@ -464,7 +462,7 @@ mod tests {
         for i in 0..10 {
             vm.write_to_register(Register::R0, i * 10);
             let instruction = 0b0011_000_000000000 | i;
-            st(&mut vm.registers, &mut vm.memory, instruction);
+            st(&mut vm, instruction);
         }
 
         // Verify array
@@ -484,15 +482,15 @@ mod tests {
         vm.write_to_register(Register::R2, 300);
 
         // ST R0, 16 (to 0x3100)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_000_000010000);
+        st(&mut vm, 0b0011_000_000010000);
         assert_eq!(vm.memory[0x3100], 100);
 
         // ST R1, 17 (to 0x3101)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000010001);
+        st(&mut vm, 0b0011_001_000010001);
         assert_eq!(vm.memory[0x3101], 200);
 
         // ST R2, 18 (to 0x3102)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000010010);
+        st(&mut vm, 0b0011_010_000010010);
         assert_eq!(vm.memory[0x3102], 300);
     }
 
@@ -505,15 +503,15 @@ mod tests {
         vm.write_to_register(Register::R3, 0x0043); // 'C'
 
         // ST R1, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000000001);
+        st(&mut vm, 0b0011_001_000000001);
         assert_eq!(vm.memory[0x3001], 0x0041);
 
         // ST R2, 2
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000010);
+        st(&mut vm, 0b0011_010_000000010);
         assert_eq!(vm.memory[0x3002], 0x0042);
 
         // ST R3, 3
-        st(&mut vm.registers, &mut vm.memory, 0b0011_011_000000011);
+        st(&mut vm, 0b0011_011_000000011);
         assert_eq!(vm.memory[0x3003], 0x0043);
     }
 
@@ -526,7 +524,7 @@ mod tests {
         vm.write_to_register(Register::R7, 0xDEAD);
 
         // ST R7, 15
-        st(&mut vm.registers, &mut vm.memory, 0b0011_111_000001111);
+        st(&mut vm, 0b0011_111_000001111);
 
         assert_eq!(vm.memory[0xFFFF], 0xDEAD);
     }
@@ -538,7 +536,7 @@ mod tests {
         vm.write_to_register(Register::R0, 0xBEEF);
 
         // ST R0, -5 (0x1FB in 9-bit two's complement)
-        st(&mut vm.registers, &mut vm.memory, 0b0011_000_111111011);
+        st(&mut vm, 0b0011_000_111111011);
 
         assert_eq!(vm.memory[0x0000], 0xBEEF);
     }
@@ -552,7 +550,7 @@ mod tests {
         vm.write_to_register(Register::R1, 0xAAAA);
 
         // ST R1, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000000001);
+        st(&mut vm, 0b0011_001_000000001);
 
         assert_eq!(vm.memory[0x3001], 0xAAAA);
     }
@@ -564,7 +562,7 @@ mod tests {
         vm.write_to_register(Register::R2, 0xFFFF);
 
         // ST R2, 1
-        st(&mut vm.registers, &mut vm.memory, 0b0011_010_000000001);
+        st(&mut vm, 0b0011_010_000000001);
 
         assert_eq!(vm.memory[0x3001], 0xFFFF);
     }
@@ -579,7 +577,7 @@ mod tests {
         vm.write_to_register(Register::R1, original_value);
 
         // ST R1, 10
-        st(&mut vm.registers, &mut vm.memory, 0b0011_001_000001010);
+        st(&mut vm, 0b0011_001_000001010);
 
         // Clear R1
         vm.write_to_register(Register::R1, 0);

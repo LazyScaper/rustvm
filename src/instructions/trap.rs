@@ -1,8 +1,8 @@
 use crate::instructions::update_flags;
 use crate::registers::register::Register::{Count, Pc, R0, R7};
 use crate::MEMORY_MAX;
-use std::{io, process};
 use std::io::{Read, Write};
+use std::{io, process};
 
 const TRAP_GETC: u16 = 0x20; /* get character from keyboard, not echoed onto the terminal */
 const TRAP_OUT: u16 = 0x21; /* output a character */
@@ -169,9 +169,9 @@ mod tests {
         vm.write_to_register(Register::R0, 0x4000); // Pointer to string
 
         // Setup a string in memory: "HI" + null terminator
-        vm.write_to_memory(0x4000, 0x0048); // 'H'
-        vm.write_to_memory(0x4001, 0x0049); // 'I'
-        vm.write_to_memory(0x4002, 0x0000); // null terminator
+        vm.mem_write(0x4000, 0x0048); // 'H'
+        vm.mem_write(0x4001, 0x0049); // 'I'
+        vm.mem_write(0x4002, 0x0000); // null terminator
 
         // TRAP x22 (PUTS)
         trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100010);
@@ -200,8 +200,8 @@ mod tests {
         vm.write_to_register(Register::R0, 0x4000); // Pointer to packed string
 
         // Setup packed string: "AB" in one word
-        vm.write_to_memory(0x4000, 0x4241); // 'A' (0x41) in low byte, 'B' (0x42) in high byte
-        vm.write_to_memory(0x4001, 0x0000); // null terminator
+        vm.mem_write(0x4000, 0x4241); // 'A' (0x41) in low byte, 'B' (0x42) in high byte
+        vm.mem_write(0x4001, 0x0000); // null terminator
 
         // TRAP x24 (PUTSP)
         trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100100);
@@ -417,7 +417,7 @@ mod tests {
         vm.write_to_register(Register::R0, 0x4000); // Pointer to string
 
         // Empty string (just null terminator)
-        vm.write_to_memory(0x4000, 0x0000);
+        vm.mem_write(0x4000, 0x0000);
 
         // TRAP x22 (PUTS)
         trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100010);
@@ -433,12 +433,12 @@ mod tests {
         vm.write_to_register(Register::R0, 0x4000); // Pointer to string
 
         // "HELLO" + null
-        vm.write_to_memory(0x4000, 0x0048); // 'H'
-        vm.write_to_memory(0x4001, 0x0045); // 'E'
-        vm.write_to_memory(0x4002, 0x004C); // 'L'
-        vm.write_to_memory(0x4003, 0x004C); // 'L'
-        vm.write_to_memory(0x4004, 0x004F); // 'O'
-        vm.write_to_memory(0x4005, 0x0000); // null
+        vm.mem_write(0x4000, 0x0048); // 'H'
+        vm.mem_write(0x4001, 0x0045); // 'E'
+        vm.mem_write(0x4002, 0x004C); // 'L'
+        vm.mem_write(0x4003, 0x004C); // 'L'
+        vm.mem_write(0x4004, 0x004F); // 'O'
+        vm.mem_write(0x4005, 0x0000); // null
 
         // TRAP x22 (PUTS)
         trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100010);
@@ -453,9 +453,9 @@ mod tests {
         vm.write_to_register(Register::R0, 0x4000);
 
         // "ABCD" packed: 'BA' and 'DC'
-        vm.write_to_memory(0x4000, 0x4241); // 'A' (0x41), 'B' (0x42)
-        vm.write_to_memory(0x4001, 0x4443); // 'C' (0x43), 'D' (0x44)
-        vm.write_to_memory(0x4002, 0x0000); // null
+        vm.mem_write(0x4000, 0x4241); // 'A' (0x41), 'B' (0x42)
+        vm.mem_write(0x4001, 0x4443); // 'C' (0x43), 'D' (0x44)
+        vm.mem_write(0x4002, 0x0000); // null
 
         // TRAP x24 (PUTSP)
         trap(&mut vm.registers, &vm.memory, 0b1111_0000_00100100);

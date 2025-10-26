@@ -55,7 +55,7 @@ impl Vm {
         self.registers[register as usize] = value;
     }
 
-    fn write_to_memory(&mut self, offset: u16, value: u16) {
+    fn mem_write(&mut self, offset: u16, value: u16) {
         self.memory[offset as usize] = value;
     }
 
@@ -142,15 +142,15 @@ impl Vm {
         match opcode {
             Opcode::Br => br(&mut self.registers, instruction),
             Opcode::Add => add(&mut self.registers, instruction),
-            Opcode::Ld => ld(&mut self.registers, &self.memory, instruction),
-            Opcode::St => st(&mut self.registers, &mut self.memory, instruction),
+            Opcode::Ld => ld(self, instruction),
+            Opcode::St => st(self, instruction),
             Opcode::Jsr => jsr(&mut self.registers, instruction),
             Opcode::And => and(&mut self.registers, instruction),
             Opcode::Ldr => ldr(&mut self.registers, &self.memory, instruction),
-            Opcode::Str => str(&mut self.registers, &mut self.memory, instruction),
+            Opcode::Str => str(self, instruction),
             Opcode::Not => not(&mut self.registers, instruction),
             Opcode::Ldi => ldi(&mut self.registers, &self.memory, instruction),
-            Opcode::Sti => sti(&mut self.registers, &mut self.memory, instruction),
+            Opcode::Sti => sti(self, instruction),
             Opcode::Jmp => jmp(&mut self.registers, instruction),
             Opcode::Lea => lea(&mut self.registers, instruction),
             Opcode::Trap => trap(&mut self.registers, &self.memory, instruction),

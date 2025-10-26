@@ -29,7 +29,7 @@ mod tests {
     fn test_ldr_basic_positive_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 0x3000);
-        vm.write_to_memory(0x3005, 42);
+        vm.mem_write(0x3005, 42);
 
         // LDR R2, R1, 5 (load from R1 + 5)
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000101);
@@ -41,7 +41,7 @@ mod tests {
     fn test_ldr_zero_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 0x3000);
-        vm.write_to_memory(0x3000, 123);
+        vm.mem_write(0x3000, 123);
 
         // LDR R4, R3, 0 (load from R3 + 0)
         ldr(&mut vm.registers, &vm.memory, 0b0110_100_011_000000);
@@ -53,7 +53,7 @@ mod tests {
     fn test_ldr_negative_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 0x3010);
-        vm.write_to_memory(0x3008, 99);
+        vm.mem_write(0x3008, 99);
 
         // LDR R2, R1, -8 (0x38 in 6-bit two's complement)
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_111000);
@@ -65,7 +65,7 @@ mod tests {
     fn test_ldr_max_positive_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R0, 0x3000);
-        vm.write_to_memory(0x301F, 255);
+        vm.mem_write(0x301F, 255);
 
         // LDR R1, R0, 31 (max positive 6-bit offset)
         ldr(&mut vm.registers, &vm.memory, 0b0110_001_000_011111);
@@ -77,7 +77,7 @@ mod tests {
     fn test_ldr_max_negative_offset() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R2, 0x3020);
-        vm.write_to_memory(0x3000, 77);
+        vm.mem_write(0x3000, 77);
 
         // LDR R3, R2, -32 (max negative 6-bit offset)
         ldr(&mut vm.registers, &vm.memory, 0b0110_011_010_100000);
@@ -91,7 +91,7 @@ mod tests {
     fn test_ldr_to_r0() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 0x3000);
-        vm.write_to_memory(0x3001, 111);
+        vm.mem_write(0x3001, 111);
 
         // LDR R0, R1, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_000_001_000001);
@@ -103,7 +103,7 @@ mod tests {
     fn test_ldr_to_r7() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R6, 0x3000);
-        vm.write_to_memory(0x3002, 222);
+        vm.mem_write(0x3002, 222);
 
         // LDR R7, R6, 2
         ldr(&mut vm.registers, &vm.memory, 0b0110_111_110_000010);
@@ -117,7 +117,7 @@ mod tests {
     fn test_ldr_from_r0() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R0, 0x4000);
-        vm.write_to_memory(0x4005, 333);
+        vm.mem_write(0x4005, 333);
 
         // LDR R1, R0, 5
         ldr(&mut vm.registers, &vm.memory, 0b0110_001_000_000101);
@@ -129,7 +129,7 @@ mod tests {
     fn test_ldr_from_r1() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 0x5000);
-        vm.write_to_memory(0x5003, 444);
+        vm.mem_write(0x5003, 444);
 
         // LDR R2, R1, 3
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000011);
@@ -141,7 +141,7 @@ mod tests {
     fn test_ldr_from_r2() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R2, 0x6000);
-        vm.write_to_memory(0x6007, 555);
+        vm.mem_write(0x6007, 555);
 
         // LDR R3, R2, 7
         ldr(&mut vm.registers, &vm.memory, 0b0110_011_010_000111);
@@ -153,7 +153,7 @@ mod tests {
     fn test_ldr_from_r3() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 0x7000);
-        vm.write_to_memory(0x7002, 666);
+        vm.mem_write(0x7002, 666);
 
         // LDR R4, R3, 2
         ldr(&mut vm.registers, &vm.memory, 0b0110_100_011_000010);
@@ -165,7 +165,7 @@ mod tests {
     fn test_ldr_from_r4() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R4, 0x8000);
-        vm.write_to_memory(0x8004, 777);
+        vm.mem_write(0x8004, 777);
 
         // LDR R5, R4, 4
         ldr(&mut vm.registers, &vm.memory, 0b0110_101_100_000100);
@@ -177,7 +177,7 @@ mod tests {
     fn test_ldr_from_r5() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R5, 0x9000);
-        vm.write_to_memory(0x9001, 888);
+        vm.mem_write(0x9001, 888);
 
         // LDR R6, R5, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_110_101_000001);
@@ -189,7 +189,7 @@ mod tests {
     fn test_ldr_from_r6() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R6, 0xA000);
-        vm.write_to_memory(0xA006, 999);
+        vm.mem_write(0xA006, 999);
 
         // LDR R7, R6, 6
         ldr(&mut vm.registers, &vm.memory, 0b0110_111_110_000110);
@@ -201,7 +201,7 @@ mod tests {
     fn test_ldr_from_r7() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R7, 0xB000);
-        vm.write_to_memory(0xB003, 1111);
+        vm.mem_write(0xB003, 1111);
 
         // LDR R0, R7, 3
         ldr(&mut vm.registers, &vm.memory, 0b0110_000_111_000011);
@@ -215,7 +215,7 @@ mod tests {
     fn test_ldr_destination_same_as_base() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 0x3000);
-        vm.write_to_memory(0x3005, 42);
+        vm.mem_write(0x3005, 42);
 
         // LDR R3, R3, 5 (load into same register used as base)
         ldr(&mut vm.registers, &vm.memory, 0b0110_011_011_000101);
@@ -229,7 +229,7 @@ mod tests {
     fn test_ldr_zero_value() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 0x3000);
-        vm.write_to_memory(0x3001, 0);
+        vm.mem_write(0x3001, 0);
 
         // LDR R2, R1, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000001);
@@ -241,7 +241,7 @@ mod tests {
     fn test_ldr_max_positive_value() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 0x3000);
-        vm.write_to_memory(0x3001, 0x7FFF);
+        vm.mem_write(0x3001, 0x7FFF);
 
         // LDR R4, R3, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_100_011_000001);
@@ -253,7 +253,7 @@ mod tests {
     fn test_ldr_negative_value() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R5, 0x3000);
-        vm.write_to_memory(0x3001, 0xFFFF);
+        vm.mem_write(0x3001, 0xFFFF);
 
         // LDR R6, R5, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_110_101_000001);
@@ -269,7 +269,7 @@ mod tests {
         let test_values = [0x1234, 0xABCD, 0x5678, 0xDEAD, 0xBEEF];
 
         for (i, &value) in test_values.iter().enumerate() {
-            vm.write_to_memory(0x3000 + i as u16, value);
+            vm.mem_write(0x3000 + i as u16, value);
 
             let instruction = 0b0110_001_000_000000 | (i as u16);
             ldr(&mut vm.registers, &vm.memory, instruction);
@@ -287,7 +287,7 @@ mod tests {
         for &base in &base_addresses {
             let mut vm = Vm::new();
             vm.write_to_register(Register::R1, base);
-            vm.write_to_memory(base + 10, 42);
+            vm.mem_write(base + 10, 42);
 
             // LDR R2, R1, 10
             ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_001010);
@@ -300,7 +300,7 @@ mod tests {
     fn test_ldr_from_low_memory() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R2, 0x0010);
-        vm.write_to_memory(0x0015, 99);
+        vm.mem_write(0x0015, 99);
 
         // LDR R3, R2, 5
         ldr(&mut vm.registers, &vm.memory, 0b0110_011_010_000101);
@@ -312,7 +312,7 @@ mod tests {
     fn test_ldr_from_high_memory() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R4, 0xFE00);
-        vm.write_to_memory(0xFE10, 88);
+        vm.mem_write(0xFE10, 88);
 
         // LDR R5, R4, 16
         ldr(&mut vm.registers, &vm.memory, 0b0110_101_100_010000);
@@ -327,7 +327,7 @@ mod tests {
         let mut vm = Vm::new();
         let base_address = 0x3000;
         vm.write_to_register(Register::R1, base_address);
-        vm.write_to_memory(0x3005, 42);
+        vm.mem_write(0x3005, 42);
 
         // LDR R2, R1, 5
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000101);
@@ -342,7 +342,7 @@ mod tests {
         vm.write_to_register(Register::R0, 0x1111);
         vm.write_to_register(Register::R1, 0x3000);
         vm.write_to_register(Register::R3, 0x3333);
-        vm.write_to_memory(0x3005, 42);
+        vm.mem_write(0x3005, 42);
 
         // LDR R2, R1, 5
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000101);
@@ -359,7 +359,7 @@ mod tests {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 0x3000);
         vm.write_to_register(Register::R2, 9999); // Pre-existing value
-        vm.write_to_memory(0x3005, 42);
+        vm.mem_write(0x3005, 42);
 
         // LDR R2, R1, 5
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000101);
@@ -373,9 +373,9 @@ mod tests {
     fn test_ldr_multiple_values_sequentially() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R0, 0x3000);
-        vm.write_to_memory(0x3001, 10);
-        vm.write_to_memory(0x3002, 20);
-        vm.write_to_memory(0x3003, 30);
+        vm.mem_write(0x3001, 10);
+        vm.mem_write(0x3002, 20);
+        vm.mem_write(0x3003, 30);
 
         // LDR R1, R0, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_001_000_000001);
@@ -398,7 +398,7 @@ mod tests {
 
         // Setup array
         for i in 0..10 {
-            vm.write_to_memory(array_base + i, i * 10);
+            vm.mem_write(array_base + i, i * 10);
         }
 
         // Load array elements
@@ -415,7 +415,7 @@ mod tests {
     fn test_ldr_offset_minus_one() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R4, 0x3001);
-        vm.write_to_memory(0x3000, 55);
+        vm.mem_write(0x3000, 55);
 
         // LDR R5, R4, -1 (0x3F in 6-bit two's complement)
         ldr(&mut vm.registers, &vm.memory, 0b0110_101_100_111111);
@@ -427,7 +427,7 @@ mod tests {
     fn test_ldr_offset_plus_one() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R6, 0x3000);
-        vm.write_to_memory(0x3001, 66);
+        vm.mem_write(0x3001, 66);
 
         // LDR R7, R6, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_111_110_000001);
@@ -442,7 +442,7 @@ mod tests {
         let mut vm = Vm::new();
         let pointer = 0x4000;
         vm.write_to_register(Register::R1, pointer);
-        vm.write_to_memory(pointer, 123);
+        vm.mem_write(pointer, 123);
 
         // LDR R2, R1, 0 (dereference pointer)
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000000);
@@ -457,9 +457,9 @@ mod tests {
         vm.write_to_register(Register::R0, struct_base);
 
         // Simulate struct with fields at offsets
-        vm.write_to_memory(struct_base + 0, 100); // field 0
-        vm.write_to_memory(struct_base + 1, 200); // field 1
-        vm.write_to_memory(struct_base + 2, 300); // field 2
+        vm.mem_write(struct_base + 0, 100); // field 0
+        vm.mem_write(struct_base + 1, 200); // field 1
+        vm.mem_write(struct_base + 2, 300); // field 2
 
         // Load field 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_001_000_000001);
@@ -476,7 +476,7 @@ mod tests {
     fn test_ldr_at_memory_boundary() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R7, 0xFFE0);
-        vm.write_to_memory(0xFFFF, 0xDEAD);
+        vm.mem_write(0xFFFF, 0xDEAD);
 
         // LDR R0, R7, 31
         ldr(&mut vm.registers, &vm.memory, 0b0110_000_111_011111);
@@ -488,7 +488,7 @@ mod tests {
     fn test_ldr_from_address_zero() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 0x0005);
-        vm.write_to_memory(0x0000, 0xBEEF);
+        vm.mem_write(0x0000, 0xBEEF);
 
         // LDR R2, R1, -5 (0x3B in 6-bit two's complement)
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_111011);
@@ -502,7 +502,7 @@ mod tests {
     fn test_ldr_alternating_pattern() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R1, 0x3000);
-        vm.write_to_memory(0x3001, 0xAAAA);
+        vm.mem_write(0x3001, 0xAAAA);
 
         // LDR R2, R1, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000001);
@@ -514,7 +514,7 @@ mod tests {
     fn test_ldr_all_bits_set() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::R3, 0x3000);
-        vm.write_to_memory(0x3001, 0xFFFF);
+        vm.mem_write(0x3001, 0xFFFF);
 
         // LDR R4, R3, 1
         ldr(&mut vm.registers, &vm.memory, 0b0110_100_011_000001);
@@ -529,7 +529,7 @@ mod tests {
         let mut vm = Vm::new();
         // LDR uses base register + offset
         vm.write_to_register(Register::R1, 0x3000);
-        vm.write_to_memory(0x3005, 42);
+        vm.mem_write(0x3005, 42);
 
         // LDR R2, R1, 5
         ldr(&mut vm.registers, &vm.memory, 0b0110_010_001_000101);
@@ -549,9 +549,9 @@ mod tests {
         vm.write_to_register(Register::R0, string_base);
 
         // Store "ABC"
-        vm.write_to_memory(string_base + 0, 0x0041); // 'A'
-        vm.write_to_memory(string_base + 1, 0x0042); // 'B'
-        vm.write_to_memory(string_base + 2, 0x0043); // 'C'
+        vm.mem_write(string_base + 0, 0x0041); // 'A'
+        vm.mem_write(string_base + 1, 0x0042); // 'B'
+        vm.mem_write(string_base + 2, 0x0043); // 'C'
 
         // Load characters
         ldr(&mut vm.registers, &vm.memory, 0b0110_001_000_000000);

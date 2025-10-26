@@ -406,7 +406,7 @@ mod tests {
     fn test_lea_loads_address_not_value() {
         let mut vm = Vm::new();
         vm.write_to_register(Register::Pc, 0x3000);
-        vm.write_to_memory(0x3005, 0xABCD); // Value in memory
+        vm.mem_write(0x3005, 0xABCD); // Value in memory
 
         // LEA R1, 5 (loads ADDRESS 0x3005, not value 0xABCD)
         lea(&mut vm.registers, 0b1110_001_000000101);
@@ -470,7 +470,7 @@ mod tests {
         vm.write_to_register(Register::Pc, 0x3000);
 
         // Memory at target address doesn't matter
-        vm.write_to_memory(0x3010, 0xDEAD);
+        vm.mem_write(0x3010, 0xDEAD);
 
         // LEA R1, 16
         lea(&mut vm.registers, 0b1110_001_000010000);
