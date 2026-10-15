@@ -1,8 +1,7 @@
 use crate::instructions::update_flags;
 use crate::registers::register::Register::{Pc, R0, R7};
 use crate::Vm;
-use std::io::{Read, Write};
-use std::{io, process};
+use std::io::{self, Write};
 
 const TRAP_GETC: u16 = 0x20; /* get character from keyboard, not echoed onto the terminal */
 const TRAP_OUT: u16 = 0x21; /* output a character */
@@ -11,7 +10,7 @@ const TRAP_IN: u16 = 0x23; /* get character from keyboard, echoed onto the termi
 const TRAP_PUTSP: u16 = 0x24; /* output a byte string */
 const TRAP_HALT: u16 = 0x25; /* halt the program */
 
-pub fn trap(vm: &mut Vm, instruction: u16) {
+pub fn trap(vm: &mut Vm, instruction: u16) -> bool {
     vm.registers[R7 as usize] = vm.registers[Pc as usize];
 
     match instruction & 0xFF {
@@ -78,13 +77,13 @@ pub fn trap(vm: &mut Vm, instruction: u16) {
         TRAP_HALT => {
             println!("\n--- HALT ---");
             io::stdout().flush().unwrap();
-            process::exit(1);
+            return false;
         }
         _ => {
-            eprintln!("Unknown trap code: 0x{:02X}", instruction & 0xFF);
-            process::exit(1);
+            panic!("Unknown trap code: 0x{:02X}", instruction & 0xFF);
         }
     }
+    true
 }
 #[cfg(test)]
 mod tests {
@@ -92,11 +91,18 @@ mod tests {
     use crate::registers::register::Register;
     use crate::Vm;
 
+    fn vm_with_input() -> Vm {
+        let mut vm = Vm::new();
+        let (sender, receiver) = std::sync::mpsc::channel();
+        for _ in 0..32 { sender.send(b'A').unwrap(); }
+        vm.input = Some(receiver);
+        vm
+    }
     // ========== Basic TRAP Operations ==========
 
     #[test]
     fn test_trap_saves_pc_to_r7() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         let original_pc = 0x3000;
         vm.write_to_register(Register::Pc, original_pc);
 
@@ -110,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_trap_overwrites_previous_r7() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R7, 0xDEAD); // Pre-existing value
 
@@ -125,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_trap_getc() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x20 (GETC) - native implementation
@@ -138,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_trap_out() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R0, 0x0041); // 'A'
 
@@ -152,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_trap_puts() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R0, 0x4000); // Pointer to string
 
@@ -171,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_trap_in() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x23 (IN) - native implementation
@@ -183,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_trap_putsp() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R0, 0x4000); // Pointer to packed string
 
@@ -199,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_trap_halt() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x25 (HALT)
@@ -211,8 +217,9 @@ mod tests {
     // ========== Different Trap Vectors ==========
 
     #[test]
+    #[should_panic(expected = "Unknown trap code")]
     fn test_trap_vector_x00() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x00 (user-defined or reserved)
@@ -222,8 +229,9 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Unknown trap code")]
     fn test_trap_vector_x01() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x01
@@ -233,8 +241,9 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Unknown trap code")]
     fn test_trap_vector_xff() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP xFF (max trap vector)
@@ -250,7 +259,7 @@ mod tests {
         let pc_values = [0x0100, 0x1000, 0x3000, 0x5000, 0x7000, 0xA000];
 
         for &pc in &pc_values {
-            let mut vm = Vm::new();
+            let mut vm = vm_with_input();
             vm.write_to_register(Register::Pc, pc);
 
             // TRAP x25
@@ -262,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_trap_from_low_memory() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x0200);
 
         // TRAP x20
@@ -273,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_trap_from_high_memory() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0xF000);
 
         // TRAP x20
@@ -286,7 +295,7 @@ mod tests {
 
     #[test]
     fn test_trap_preserves_r0_through_r6() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R0, 0x1111);
         vm.write_to_register(Register::R1, 0x2222);
@@ -313,7 +322,7 @@ mod tests {
 
     #[test]
     fn test_sequential_traps() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x20
@@ -330,7 +339,7 @@ mod tests {
 
     #[test]
     fn test_nested_traps_overwrite_r7() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // First TRAP
@@ -348,8 +357,9 @@ mod tests {
     // ========== Trap Vector Identification ==========
 
     #[test]
+    #[should_panic(expected = "Unknown trap code")]
     fn test_trap_vector_extraction() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // Test that different trap vectors save R7 correctly
@@ -370,7 +380,7 @@ mod tests {
 
     #[test]
     fn test_trap_and_ret_pattern() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x25
@@ -386,8 +396,9 @@ mod tests {
     // ========== Edge Cases ==========
 
     #[test]
+    #[should_panic(expected = "Unknown trap code")]
     fn test_trap_with_all_zeros() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0);
 
         // TRAP x00
@@ -400,7 +411,7 @@ mod tests {
 
     #[test]
     fn test_trap_puts_with_empty_string() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R0, 0x4000); // Pointer to string
 
@@ -416,7 +427,7 @@ mod tests {
 
     #[test]
     fn test_trap_puts_with_long_string() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R0, 0x4000); // Pointer to string
 
@@ -436,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_trap_putsp_with_packed_string() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R0, 0x4000);
 
@@ -454,8 +465,9 @@ mod tests {
     // ========== User-Defined Traps ==========
 
     #[test]
+    #[should_panic(expected = "Unknown trap code")]
     fn test_user_defined_trap() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP x30 (user-defined)
@@ -465,8 +477,9 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Unknown trap code")]
     fn test_multiple_user_traps() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // Test multiple user-defined traps
@@ -484,8 +497,9 @@ mod tests {
     // ========== Boundary Trap Vectors ==========
 
     #[test]
+    #[should_panic(expected = "Unknown trap code")]
     fn test_trap_vector_at_boundary() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
 
         // TRAP xFF (last possible trap vector)
@@ -498,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_trap_getc_preserves_other_registers() {
-        let mut vm = Vm::new();
+        let mut vm = vm_with_input();
         vm.write_to_register(Register::Pc, 0x3000);
         vm.write_to_register(Register::R1, 0x1111);
         vm.write_to_register(Register::R2, 0x2222);

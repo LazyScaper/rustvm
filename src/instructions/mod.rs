@@ -30,8 +30,18 @@ fn sign_extend(input: u16, bit_count: u16) -> u16 {
 fn update_flags(registers: &mut [u16; (Register::Count as u16) as usize], r: u16) {
     match registers[r as usize] {
         0 => registers[Register::Cond as usize] = ConditionFlag::Zro as u16,
-        1 => registers[Register::Cond as usize] = ConditionFlag::Neg as u16,
+        value if value & 0x8000 != 0 => registers[Register::Cond as usize] = ConditionFlag::Neg as u16,
         _ => registers[Register::Cond as usize] = ConditionFlag::Pos as u16,
+    }
+}
+
+#[test]
+fn condition_flags_follow_signed_results() {
+    let mut registers = [0; Register::Count as usize];
+    for (value, expected) in [(0, 2), (1, 1), (0x7fff, 1), (0x8000, 4), (0xffff, 4)] {
+        registers[0] = value;
+        update_flags(&mut registers, 0);
+        assert_eq!(registers[Register::Cond as usize], expected, "value {value:#06x}");
     }
 }
 

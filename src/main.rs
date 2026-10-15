@@ -20,9 +20,10 @@ use crate::registers::register::{MemoryMappedRegister, Register};
 use crate::registers::ConditionFlag;
 use byteorder::{BigEndian, ReadBytesExt};
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::{BufReader, IsTerminal, Read};
 use std::process::exit;
 use std::sync::OnceLock;
+use std::sync::mpsc::{self, Receiver};
 use std::{env, io};
 use windows::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows::Win32::System::Console::CONSOLE_MODE;
@@ -41,6 +42,8 @@ const PC_START: usize = 0x3000;
 struct Vm {
     memory: [u16; MEMORY_MAX],
     registers: [u16; (Register::Count as u16) as usize],
+    input: Option<Receiver<u8>>,
+    pending_key: Option<u8>,
 }
 
 impl Vm {
@@ -48,6 +51,8 @@ impl Vm {
         Self {
             registers: [0; (Register::Count as u16) as usize],
             memory: [0; MEMORY_MAX],
+            input: None,
+            pending_key: None,
         }
     }
 
@@ -110,7 +115,13 @@ impl Vm {
         self.memory[address as usize]
     }
 
-    fn check_key(&self) -> bool {
+    fn check_key(&mut self) -> bool {
+        if let Some(input) = &self.input {
+            if self.pending_key.is_none() {
+                self.pending_key = input.try_recv().ok();
+            }
+            return self.pending_key.is_some();
+        }
         unsafe {
             if let Some(h_stdin) = self.get_handle() {
                 let mut buffer: [INPUT_RECORD; 128] = std::mem::zeroed();
@@ -132,9 +143,15 @@ impl Vm {
     }
 
     fn get_char(&mut self) -> u16 {
+        if let Some(key) = self.pending_key.take() {
+            return key as u16;
+        }
+        if let Some(input) = &self.input {
+            return input.recv().expect("Input stream ended") as u16;
+        }
         unsafe {
             if let Some(h_stdin) = self.get_handle() {
-                let mut buffer: [INPUT_RECORD; 128] = std::mem::zeroed();
+                let mut buffer: [INPUT_RECORD; 1] = std::mem::zeroed();
                 let mut events_read: u32 = 0;
 
                 loop {
@@ -148,6 +165,8 @@ impl Vm {
                                 }
                             }
                         }
+                    } else {
+                        panic!("Failed to read console input");
                     }
                 }
             }
@@ -176,14 +195,14 @@ impl Vm {
             Opcode::St => st(self, instruction),
             Opcode::Jsr => jsr(&mut self.registers, instruction),
             Opcode::And => and(&mut self.registers, instruction),
-            Opcode::Ldr => ldr(&mut self.registers, &self.memory, instruction),
+            Opcode::Ldr => ldr(self, instruction),
             Opcode::Str => str(self, instruction),
             Opcode::Not => not(&mut self.registers, instruction),
-            Opcode::Ldi => ldi(&mut self.registers, &self.memory, instruction),
+            Opcode::Ldi => ldi(self, instruction),
             Opcode::Sti => sti(self, instruction),
             Opcode::Jmp => jmp(&mut self.registers, instruction),
             Opcode::Lea => lea(&mut self.registers, instruction),
-            Opcode::Trap => trap(self, instruction),
+            Opcode::Trap => return trap(self, instruction),
             Opcode::Res | Opcode::Rti => {
                 return false;
             }
@@ -207,7 +226,20 @@ impl Vm {
         instruction
     }
 
-    pub fn disable_input_buffering(&self) -> windows::core::Result<()> {
+    pub fn disable_input_buffering(&mut self) -> windows::core::Result<()> {
+        if !io::stdin().is_terminal() {
+            let (sender, receiver) = mpsc::channel();
+            self.input = Some(receiver);
+            std::thread::spawn(move || {
+                for byte in io::stdin().lock().bytes() {
+                    match byte {
+                        Ok(byte) if sender.send(byte).is_ok() => {}
+                        _ => break,
+                    }
+                }
+            });
+            return Ok(());
+        }
         unsafe {
             let h_stdin = GetStdHandle(STD_INPUT_HANDLE)?;
             if h_stdin == INVALID_HANDLE_VALUE {
@@ -221,7 +253,7 @@ impl Vm {
             FDW_OLD_MODE = old_mode;
 
             // Disable echo and line input (same behavior as C code)
-            let new_mode = old_mode.0 ^ ENABLE_ECHO_INPUT.0 ^ ENABLE_LINE_INPUT.0;
+            let new_mode = old_mode.0 & !(ENABLE_ECHO_INPUT.0 | ENABLE_LINE_INPUT.0);
             let new_mode = CONSOLE_MODE(new_mode);
 
             SetConsoleMode(h_stdin, new_mode)?;
@@ -245,7 +277,7 @@ fn main() {
 
     let mut vm = Vm::new();
 
-    vm.disable_input_buffering();
+    vm.disable_input_buffering().expect("Failed to configure console input");
 
     match args.len() {
         1 => {
@@ -253,7 +285,7 @@ fn main() {
             exit(2)
         }
         _ => {
-            for image_file in args {
+            for image_file in args.into_iter().skip(1) {
                 if !vm.read_file(&image_file) {
                     println!("{} is not a valid image.", &image_file);
                     exit(1);
@@ -268,4 +300,18 @@ fn main() {
     vm.run();
 
     vm.restore_input_buffering().unwrap();
+}
+
+#[cfg(test)]
+mod regression_tests {
+    use super::*;
+
+    #[test]
+    fn halt_stops_execution_without_exiting_host() {
+        let mut vm = Vm::new();
+        vm.registers[Register::Pc as usize] = 0x3000;
+        vm.memory[0x3000] = 0xf025;
+        assert!(!vm.fetch_decode_execute());
+        assert_eq!(vm.registers[Register::R7 as usize], 0x3001);
+    }
 }
